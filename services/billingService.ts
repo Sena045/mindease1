@@ -44,10 +44,9 @@ declare global {
 }
 
 // --- CONFIGURATION ---
-// CHANGED: Temporarily set to TRUE so you can test Premium features 
-// while your Google Play Developer Account is being verified.
-// Once your account is approved, set this back to FALSE.
-const USE_MOCK_BILLING = true;
+// CRITICAL: Set to FALSE for the .aab file you upload to Google Play.
+// If TRUE, Google will reject the app for bypassing real payments.
+const USE_MOCK_BILLING = false;
 
 // --- MOCK DATA (Fallback) ---
 const MOCK_PRODUCTS: Product[] = [
