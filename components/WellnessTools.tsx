@@ -3,6 +3,8 @@ import BreathingExercise from './BreathingExercise';
 import JournalTool from './JournalTool';
 import SleepSoundsTool from './SleepSoundsTool';
 import GroundingExercise from './GroundingExercise';
+import StressReliefGame from './StressReliefGame';
+import SelfHelpLibrary from './SelfHelpLibrary';
 
 interface WellnessToolsProps {
   isPremium: boolean;
@@ -10,14 +12,20 @@ interface WellnessToolsProps {
 }
 
 const WellnessTools: React.FC<WellnessToolsProps> = ({ isPremium, onUnlock }) => {
-  const [activeTool, setActiveTool] = useState<'none' | 'breathing' | 'journal' | 'sleep' | 'grounding'>('none');
+  const [activeTool, setActiveTool] = useState<'none' | 'breathing' | 'journal' | 'sleep' | 'grounding' | 'game' | 'library'>('none');
 
   if (activeTool === 'breathing') {
     return <BreathingExercise onClose={() => setActiveTool('none')} />;
   }
 
   if (activeTool === 'journal') {
-    return <JournalTool onClose={() => setActiveTool('none')} />;
+    return (
+      <JournalTool 
+        onClose={() => setActiveTool('none')} 
+        isPremium={isPremium}
+        onUnlock={onUnlock}
+      />
+    );
   }
 
   if (activeTool === 'sleep') {
@@ -26,6 +34,14 @@ const WellnessTools: React.FC<WellnessToolsProps> = ({ isPremium, onUnlock }) =>
   
   if (activeTool === 'grounding') {
     return <GroundingExercise onClose={() => setActiveTool('none')} />;
+  }
+
+  if (activeTool === 'game') {
+    return <StressReliefGame onClose={() => setActiveTool('none')} />;
+  }
+
+  if (activeTool === 'library') {
+    return <SelfHelpLibrary isPremium={isPremium} onUnlock={onUnlock} onClose={() => setActiveTool('none')} />;
   }
 
   return (
@@ -53,7 +69,59 @@ const WellnessTools: React.FC<WellnessToolsProps> = ({ isPremium, onUnlock }) =>
           </span>
         </div>
 
-        {/* Grounding Tool Card (NEW) */}
+        {/* Self Help Library Card (Newly Added) */}
+        <div 
+          onClick={() => setActiveTool('library')}
+          className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i className="fa-solid fa-book-open text-orange-600 text-xl"></i>
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-1">Wellness Library</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Read expert articles and listen to guided meditations.
+          </p>
+          <span className="text-orange-600 text-sm font-semibold flex items-center">
+            Browse Library <i className="fa-solid fa-arrow-right ml-2 text-xs group-hover:translate-x-1 transition-transform"></i>
+          </span>
+        </div>
+
+        {/* Stress Relief Games (NOW PREMIUM) */}
+        <div 
+          onClick={() => isPremium ? setActiveTool('game') : onUnlock()}
+          className={`p-6 rounded-2xl border transition-all relative overflow-hidden group 
+            ${!isPremium 
+              ? 'bg-gray-50 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100' 
+              : 'bg-white border-gray-100 shadow-sm hover:shadow-md cursor-pointer'}`}
+        >
+          {!isPremium && (
+            <div className="absolute top-3 right-3">
+              <i className="fa-solid fa-lock text-gray-400"></i>
+            </div>
+          )}
+          
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110
+            ${!isPremium ? 'bg-gray-200 grayscale opacity-50' : 'bg-pink-100'}`}>
+            <i className={`fa-solid fa-gamepad text-xl ${!isPremium ? 'text-gray-600' : 'text-pink-600'}`}></i>
+          </div>
+          
+          <h3 className={`text-lg font-bold mb-1 ${!isPremium ? 'text-gray-400' : 'text-gray-800'}`}>Stress Relief Games</h3>
+          <p className={`text-sm mb-4 ${!isPremium ? 'text-gray-400' : 'text-gray-500'}`}>
+            Pop bubbles or break balloons. Simple distractions to calm your mind.
+          </p>
+          
+          {!isPremium ? (
+             <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">
+               Unlock with Premium
+             </span>
+          ) : (
+             <span className="text-pink-600 text-sm font-semibold flex items-center">
+               Play Now <i className="fa-solid fa-arrow-right ml-2 text-xs group-hover:translate-x-1 transition-transform"></i>
+             </span>
+          )}
+        </div>
+
+        {/* Grounding Tool Card */}
         <div 
           onClick={() => setActiveTool('grounding')}
           className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"

@@ -16,9 +16,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView, isPremium
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 shadow-lg z-40 md:static md:shadow-none md:border-t-0 md:bg-transparent md:flex-col md:w-64 md:h-full md:border-r">
+    <div className="w-full bg-white border-t border-gray-200 px-6 py-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 md:w-64 md:h-full md:border-t-0 md:border-r md:shadow-none md:bg-transparent md:flex md:flex-col md:py-6">
       {/* Desktop Logo (hidden on mobile) */}
-      <div className="hidden md:block mb-8 px-2">
+      <div className="hidden md:block mb-8 px-4">
         <h1 className="text-2xl font-bold text-brand-700 flex items-center gap-2">
           <i className="fa-solid fa-spa"></i> MindEase
         </h1>

@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { JOURNAL_PROMPTS } from '../constants';
 
-const JournalTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+interface JournalToolProps {
+  onClose: () => void;
+  isPremium: boolean;
+  onUnlock: () => void;
+}
+
+const JournalTool: React.FC<JournalToolProps> = ({ onClose, isPremium, onUnlock }) => {
   const [entry, setEntry] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
 
   useEffect(() => {
-    // Pick random prompt
-    setCurrentPrompt(JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)]);
+    // Pick initial random prompt
+    if (!currentPrompt) {
+        setCurrentPrompt(JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)]);
+    }
     // Load saved draft
     const saved = localStorage.getItem('journal_draft');
     if (saved) setEntry(saved);
@@ -25,6 +33,15 @@ const JournalTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
+  const handleNewPrompt = () => {
+      if (!isPremium) {
+          onUnlock();
+          return;
+      }
+      const newPrompt = JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)];
+      setCurrentPrompt(newPrompt);
+  };
+
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
@@ -40,11 +57,20 @@ const JournalTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div className="bg-brand-50 p-4 rounded-xl border border-brand-100 mb-4">
         <p className="text-xs font-bold text-brand-600 uppercase mb-1">Writing Prompt</p>
         <p className="text-gray-800 italic text-sm">{currentPrompt}</p>
+        
         <button 
-          onClick={() => setCurrentPrompt(JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)])}
-          className="text-[10px] text-brand-500 mt-2 hover:underline"
+          onClick={handleNewPrompt}
+          className={`text-[10px] mt-2 flex items-center gap-1 ${!isPremium ? 'text-gray-400 hover:text-brand-600' : 'text-brand-500 hover:underline'}`}
         >
-          <i className="fa-solid fa-refresh mr-1"></i> New Prompt
+          {isPremium ? (
+              <>
+                 <i className="fa-solid fa-refresh"></i> New Prompt
+              </>
+          ) : (
+              <>
+                 <i className="fa-solid fa-lock"></i> Unlock more prompts
+              </>
+          )}
         </button>
       </div>
 

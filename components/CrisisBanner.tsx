@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HELPLINES } from '../constants';
 
-const CrisisBanner: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface CrisisBannerProps {
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}
 
+const CrisisBanner: React.FC<CrisisBannerProps> = ({ isOpen, onOpen, onClose }) => {
   return (
     <>
       {/* Sticky Header */}
@@ -13,7 +17,7 @@ const CrisisBanner: React.FC = () => {
           In distress? You are not alone.
         </span>
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={onOpen}
           className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1.5 px-3 rounded-full transition-colors shadow-sm"
         >
           Get Help Now
@@ -26,7 +30,7 @@ const CrisisBanner: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
             <div className="bg-red-600 p-4 flex justify-between items-center">
               <h3 className="text-white font-bold text-lg">Emergency Helplines</h3>
-              <button onClick={() => setIsOpen(false)} className="text-white hover:text-red-100">
+              <button onClick={onClose} className="text-white hover:text-red-100">
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
             </div>

@@ -3,7 +3,6 @@ import ChatInterface from './components/ChatInterface';
 import MoodTracker from './components/MoodTracker';
 import WellnessTools from './components/WellnessTools';
 import SubscriptionView from './components/SubscriptionView';
-import CrisisBanner from './components/CrisisBanner';
 import Navigation from './components/Navigation';
 import { AppView } from './types';
 
@@ -18,10 +17,16 @@ const App: React.FC = () => {
           <ChatInterface 
             isPremium={isPremium}
             onUnlock={() => setCurrentView(AppView.PREMIUM)}
+            onNavigate={(view) => setCurrentView(view)}
           />
         );
       case AppView.MOOD:
-        return <MoodTracker />;
+        return (
+          <MoodTracker 
+            isPremium={isPremium}
+            onUnlock={() => setCurrentView(AppView.PREMIUM)}
+          />
+        );
       case AppView.TOOLS:
         return (
           <WellnessTools 
@@ -41,36 +46,49 @@ const App: React.FC = () => {
           <ChatInterface 
             isPremium={isPremium}
             onUnlock={() => setCurrentView(AppView.PREMIUM)}
+            onNavigate={(view) => setCurrentView(view)}
           />
         );
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-calm-bg font-sans">
-      <CrisisBanner />
+    <div className="flex flex-col h-screen bg-calm-bg font-sans overflow-hidden">
       
-      <div className="flex flex-1 overflow-hidden">
-        {/* Navigation Sidebar (Desktop) / Bottom Bar (Mobile) */}
-        <Navigation 
-          currentView={currentView} 
-          setView={setCurrentView} 
-          isPremium={isPremium}
-        />
+      {/* Main Layout Container */}
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+        
+        {/* Desktop Sidebar (Hidden on Mobile) */}
+        <div className="hidden md:block h-full shadow-xl z-20">
+          <Navigation 
+            currentView={currentView} 
+            setView={setCurrentView} 
+            isPremium={isPremium}
+          />
+        </div>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto relative w-full">
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto relative w-full flex flex-col">
           {/* Mobile Header */}
-          <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-center sticky top-0 z-10">
+          <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-center sticky top-0 z-30 shadow-sm">
              <h1 className="text-lg font-bold text-brand-700 flex items-center gap-2">
               <i className="fa-solid fa-spa"></i> MindEase
             </h1>
           </div>
 
-          <div className="h-full">
+          <div className="flex-1 w-full">
             {renderContent()}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation (Visible only on Mobile) */}
+        <div className="md:hidden z-30">
+          <Navigation 
+            currentView={currentView} 
+            setView={setCurrentView} 
+            isPremium={isPremium}
+          />
+        </div>
       </div>
     </div>
   );

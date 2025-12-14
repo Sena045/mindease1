@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, requestPurchase, Product } from '../services/billingService';
+import { getProducts, requestPurchase, restorePurchases, Product } from '../services/billingService';
 
 interface SubscriptionViewProps {
   onSubscribe: () => void;
@@ -34,6 +34,20 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
     } finally {
       setLoading(false);
       setSelectedSku(null);
+    }
+  };
+
+  const handleRestore = async () => {
+    setLoading(true);
+    const success = await restorePurchases();
+    setLoading(false);
+    if (success) {
+      // In a real app, you would verify which products were restored.
+      // For this MVP, we assume if restore completes without error, they are valid.
+      onSubscribe();
+      alert("Purchases restored successfully.");
+    } else {
+      alert("No active subscriptions found to restore.");
     }
   };
 
@@ -88,10 +102,10 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
           {[
             { icon: 'fa-brain', title: 'Unlimited Chat', desc: 'No daily limits.' },
             { icon: 'fa-wind', title: 'Breathing Tools', desc: 'Anxiety relief.' },
+            { icon: 'fa-gamepad', title: 'Relief Games', desc: 'Fun distractions.' },
             { icon: 'fa-music', title: 'Sleep Sounds', desc: 'Better rest.' },
             { icon: 'fa-chart-pie', title: 'Mood Analytics', desc: 'Weekly insights.' },
-            { icon: 'fa-book-open', title: 'Full Library', desc: 'All articles.' },
-            { icon: 'fa-user-doctor', title: 'Therapy Perks', desc: 'Booking priority.' },
+            { icon: 'fa-pen-fancy', title: 'Journal Prompts', desc: 'Unlimited ideas.' },
           ].map((f, i) => (
             <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center text-center transition-transform hover:scale-105">
               <div className="w-10 h-10 bg-brand-50 rounded-full flex items-center justify-center mb-3">
@@ -107,7 +121,8 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
         {products.length === 0 ? (
           <div className="text-center py-12">
             <i className="fa-solid fa-circle-notch fa-spin text-brand-500 text-2xl"></i>
-            <p className="text-gray-500 text-sm mt-2">Loading plans from store...</p>
+            <p className="text-gray-500 text-sm mt-2">Connecting to Google Play Store...</p>
+            <p className="text-xs text-gray-400 mt-1">(Ensure you are on a real device)</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -116,8 +131,8 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
               <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-300 transition-all relative flex flex-col h-full">
                 <h3 className="text-lg font-bold text-gray-700">Monthly Plan</h3>
                 <div className="mt-4 flex items-baseline">
-                  <span className="text-3xl font-bold text-gray-900">₹500</span>
-                  <span className="text-sm text-gray-500 ml-1">/month</span>
+                  <span className="text-3xl font-bold text-gray-900">{products.find(p => p.productId.includes('monthly'))?.price}</span>
+                  <span className="text-sm text-gray-500 ml-1">/mo</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Perfect for short-term goals. Flexible & cancel anytime.</p>
                 <div className="mt-6 space-y-3 mb-6">
@@ -148,10 +163,10 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                     
                     <h3 className="text-xl font-bold text-brand-100 mt-2">Yearly Plan</h3>
                     <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-bold">₹5,000</span>
-                    <span className="text-sm text-brand-100 ml-1">/year</span>
+                    <span className="text-4xl font-bold">{products.find(p => p.productId.includes('yearly'))?.price}</span>
+                    <span className="text-sm text-brand-100 ml-1">/yr</span>
                     </div>
-                    <p className="text-xs text-brand-200 mt-2 font-medium">Save ₹1,000 compared to monthly!</p>
+                    <p className="text-xs text-brand-200 mt-2 font-medium">Save significantly compared to monthly!</p>
                     
                     <div className="mt-6 space-y-3 mb-8">
                         <div className="flex items-center text-sm text-brand-50"><i className="fa-solid fa-check-circle text-yellow-400 mr-2"></i> <strong>2 Months Free</strong></div>
@@ -181,6 +196,26 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
             )}
           </div>
         )}
+
+        {/* Restore & Legal Footer (REQUIRED FOR APP STORE) */}
+        <div className="pt-8 pb-4 border-t border-gray-100 flex flex-col items-center space-y-4">
+            <button 
+                onClick={handleRestore}
+                className="text-sm font-semibold text-gray-500 hover:text-brand-600 transition-colors"
+            >
+                Restore Purchases
+            </button>
+            
+            <div className="flex gap-4 text-xs text-gray-400">
+                <a href="#" onClick={(e) => { e.preventDefault(); alert('Please replace this with your Privacy Policy URL'); }} className="hover:underline">Privacy Policy</a>
+                <span>•</span>
+                <a href="#" onClick={(e) => { e.preventDefault(); alert('Please replace this with your Terms of Service URL'); }} className="hover:underline">Terms of Service</a>
+            </div>
+            
+            <p className="text-[10px] text-gray-300 text-center max-w-xs">
+                Subscriptions automatically renew unless auto-renew is turned off at least 24-hours before the end of the current period.
+            </p>
+        </div>
       </div>
     </div>
   );
