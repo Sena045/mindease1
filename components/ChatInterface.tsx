@@ -1,34 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage, AppView } from '../types';
+import { ChatMessage, AppView, UserSettings } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
 import AffirmationWidget from './AffirmationWidget';
+import { CHAT_LOCALE_DATA } from '../constants';
 
 interface ChatInterfaceProps {
   isPremium: boolean;
   onUnlock: () => void;
   onNavigate: (view: AppView) => void;
+  settings: UserSettings;
 }
 
-const QUICK_REPLIES = [
-  "I'm feeling anxious",
-  "I can't sleep",
-  "I had a bad day",
-  "Just need to vent",
-  "Guide me to breathe"
-];
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNavigate, settings }) => {
+  // Get localized data based on settings
+  const localeData = CHAT_LOCALE_DATA[settings.language] || CHAT_LOCALE_DATA['en'];
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNavigate }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init',
       role: 'model',
-      text: "Namaste! I'm Anya, your companion here at MindEase. How are you feeling today? You can share anything with me—I'm here to listen without judgment.",
+      text: localeData.greeting,
       timestamp: new Date(),
     }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Update greeting if language changes and conversation hasn't started yet
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].id === 'init') {
+      setMessages([{
+        ...messages[0],
+        text: localeData.greeting
+      }]);
+    }
+  }, [settings.language]);
 
   // Constants
   const FREE_MSG_LIMIT = 5;
@@ -69,7 +76,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
       const safetyMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        text: "I am really concerned about what you just shared. You are not alone, and there is help available. Please reach out to someone you trust or call a helpline—your life matters.",
+        text: "I am really concerned about what you just shared. You are not alone, and there is help available. Please reach out to someone you trust.",
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, safetyMessage]);
@@ -84,7 +91,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
         parts: [{ text: m.text }]
       }));
 
-      const responseText = await sendMessageToGemini(textToSend, history);
+      // Pass user settings for language/region adaptation
+      const responseText = await sendMessageToGemini(textToSend, history, settings);
 
       const modelMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -242,7 +250,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
           {/* Quick Replies - Horizontal Scroll */}
           {messages.length < 3 && !isLoading && (
             <div className="flex space-x-2 overflow-x-auto p-3 pb-0 scrollbar-hide">
-              {QUICK_REPLIES.map((reply, index) => (
+              {localeData.quickReplies.map((reply, index) => (
                 <button
                   key={index}
                   onClick={() => handleSend(reply)}

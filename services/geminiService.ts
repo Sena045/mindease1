@@ -1,32 +1,34 @@
 import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_INSTRUCTION } from "../constants";
+import { GET_SYSTEM_INSTRUCTION } from "../constants";
+import { LanguageCode, RegionCode } from "../types";
 
 // Initialize the client
-// NOTE: In a real production app, ensure API_KEY is strictly server-side or proxied 
-// to prevent exposure. For this MVP demo structure, we use process.env.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const sendMessageToGemini = async (
   message: string, 
-  history: { role: 'user' | 'model'; parts: { text: string }[] }[]
+  history: { role: 'user' | 'model'; parts: { text: string }[] }[],
+  userSettings: { language: LanguageCode; region: RegionCode }
 ): Promise<string> => {
   try {
     // Use the 2.5 Flash model for low latency chat
     const model = 'gemini-2.5-flash';
 
+    // Generate dynamic instruction based on user settings
+    const systemInstruction = GET_SYSTEM_INSTRUCTION(userSettings.language, userSettings.region);
+
     const chat = ai.chats.create({
       model: model,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7, // Slightly creative but balanced
-        maxOutputTokens: 300, // Keep responses concise
+        systemInstruction: systemInstruction,
+        temperature: 0.7, 
+        maxOutputTokens: 300, 
       },
       history: history,
     });
 
     const response = await chat.sendMessage({ message });
     
-    // Safety fallback: if no text is returned
     return response.text || "I'm listening, but I'm having trouble finding the right words. Could you rephrase that?";
   } catch (error) {
     console.error("Gemini API Error:", error);

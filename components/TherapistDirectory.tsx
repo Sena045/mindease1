@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { MOCK_THERAPISTS } from '../constants';
+import { MOCK_THERAPISTS, CURRENCY_RATES, CURRENCY_SYMBOLS } from '../constants';
+import { CurrencyCode } from '../types';
 
 interface TherapistDirectoryProps {
   isPremium?: boolean;
   onClose?: () => void;
+  currency: CurrencyCode;
 }
 
-const TherapistDirectory: React.FC<TherapistDirectoryProps> = ({ isPremium = false, onClose }) => {
+const TherapistDirectory: React.FC<TherapistDirectoryProps> = ({ isPremium = false, onClose, currency }) => {
   const [selectedTherapist, setSelectedTherapist] = useState<any | null>(null);
   const [bookingStep, setBookingStep] = useState<'select' | 'confirm' | 'success'>('select');
   const [date, setDate] = useState('');
@@ -28,10 +30,21 @@ const TherapistDirectory: React.FC<TherapistDirectoryProps> = ({ isPremium = fal
     setBookingStep('select');
   };
 
-  // Helper to calculate price
-  const getPrice = (originalFee: number) => {
-    if (!isPremium) return originalFee;
-    return Math.floor(originalFee * 0.85); // 15% discount
+  // Helper to calculate price and display string
+  const getDisplayPrice = (baseFeeUSD: number) => {
+    const rate = CURRENCY_RATES[currency] || 1;
+    const symbol = CURRENCY_SYMBOLS[currency] || '$';
+    const convertedFee = Math.round(baseFeeUSD * rate);
+    const finalFee = isPremium ? Math.floor(convertedFee * 0.85) : convertedFee;
+    
+    return `${symbol}${finalFee}`;
+  };
+  
+  const getOriginalDisplayPrice = (baseFeeUSD: number) => {
+    const rate = CURRENCY_RATES[currency] || 1;
+    const symbol = CURRENCY_SYMBOLS[currency] || '$';
+    const convertedFee = Math.round(baseFeeUSD * rate);
+    return `${symbol}${convertedFee}`;
   };
 
   return (
@@ -85,14 +98,14 @@ const TherapistDirectory: React.FC<TherapistDirectoryProps> = ({ isPremium = fal
                 <div className="text-right">
                   {isPremium ? (
                     <>
-                      <div className="text-xs text-gray-400 line-through">₹{doc.fee}</div>
+                      <div className="text-xs text-gray-400 line-through">{getOriginalDisplayPrice(doc.baseFeeUSD)}</div>
                       <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-bold">
-                        ₹{getPrice(doc.fee)}
+                        {getDisplayPrice(doc.baseFeeUSD)}
                       </div>
                     </>
                   ) : (
                     <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
-                      ₹{doc.fee}/session
+                      {getDisplayPrice(doc.baseFeeUSD)}/session
                     </div>
                   )}
                 </div>
@@ -195,8 +208,8 @@ const TherapistDirectory: React.FC<TherapistDirectoryProps> = ({ isPremium = fal
                   <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center text-sm border border-gray-100">
                     <span className="text-gray-600">Total Fee</span>
                     <div className="text-right">
-                       {isPremium && <span className="block text-xs text-gray-400 line-through">₹{selectedTherapist.fee}</span>}
-                       <span className="font-bold text-gray-900">₹{getPrice(selectedTherapist.fee)}</span>
+                       {isPremium && <span className="block text-xs text-gray-400 line-through">{getOriginalDisplayPrice(selectedTherapist.baseFeeUSD)}</span>}
+                       <span className="font-bold text-gray-900">{getDisplayPrice(selectedTherapist.baseFeeUSD)}</span>
                     </div>
                   </div>
                   

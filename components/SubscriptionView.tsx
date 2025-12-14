@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { getProducts, requestPurchase, restorePurchases, Product } from '../services/billingService';
+import { CurrencyCode } from '../types';
+import { CURRENCY_RATES, CURRENCY_SYMBOLS } from '../constants';
 
 interface SubscriptionViewProps {
   onSubscribe: () => void;
   isPremium: boolean;
+  currency: CurrencyCode;
 }
 
-const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPremium }) => {
+const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPremium, currency }) => {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
@@ -19,15 +22,16 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
     loadProducts();
   }, []);
 
-  const handleSubscribe = async (product: Product) => {
-    setSelectedSku(product.productId);
+  const handleSubscribe = async (productId: string) => {
+    setSelectedSku(productId);
     setLoading(true);
     
     try {
-      const success = await requestPurchase(product.productId);
+      // In a real app, product would come from the store with local currency
+      const success = await requestPurchase(productId);
       if (success) {
         onSubscribe();
-        alert(`🎉 Subscription Confirmed!\n\nPlan: ${product.title}\nAmount: ${product.price}\n\nThank you for choosing MindEase Premium.`);
+        alert(`🎉 Subscription Confirmed!\n\nThank you for choosing MindEase Premium.`);
       }
     } catch (error) {
       alert("Purchase failed. Please try again.");
@@ -42,13 +46,24 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
     const success = await restorePurchases();
     setLoading(false);
     if (success) {
-      // In a real app, you would verify which products were restored.
-      // For this MVP, we assume if restore completes without error, they are valid.
       onSubscribe();
       alert("Purchases restored successfully.");
     } else {
       alert("No active subscriptions found to restore.");
     }
+  };
+
+  // Helper to show approximate price if Google Play is not loaded yet (or web preview)
+  const getApproxPrice = (usd: number, type: 'mo' | 'yr') => {
+    // If we have store products, use those (they are accurate)
+    // Note: getProducts implementation currently returns Mock data on web.
+    // For this Multi-Currency feature, we will manually calculate display prices 
+    // unless products are strictly loaded from a real store.
+    
+    const rate = CURRENCY_RATES[currency];
+    const symbol = CURRENCY_SYMBOLS[currency];
+    const val = Math.round(usd * rate);
+    return `${symbol}${val}/${type}`;
   };
 
   if (isPremium) {
@@ -118,21 +133,14 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
         </div>
 
         {/* Pricing Cards */}
-        {products.length === 0 ? (
-          <div className="text-center py-12">
-            <i className="fa-solid fa-circle-notch fa-spin text-brand-500 text-2xl"></i>
-            <p className="text-gray-500 text-sm mt-2">Connecting to Google Play Store...</p>
-            <p className="text-xs text-gray-400 mt-1">(Ensure you are on a real device)</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            {/* Monthly Plan */}
-            {products.find(p => p.productId.includes('monthly')) && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-300 transition-all relative flex flex-col h-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            {/* Monthly Plan (Base $6 USD) */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-300 transition-all relative flex flex-col h-full">
                 <h3 className="text-lg font-bold text-gray-700">Monthly Plan</h3>
                 <div className="mt-4 flex items-baseline">
-                  <span className="text-3xl font-bold text-gray-900">{products.find(p => p.productId.includes('monthly'))?.price}</span>
-                  <span className="text-sm text-gray-500 ml-1">/mo</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                        {getApproxPrice(6, 'mo')}
+                    </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Perfect for short-term goals. Flexible & cancel anytime.</p>
                 <div className="mt-6 space-y-3 mb-6">
@@ -141,18 +149,16 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                 </div>
                 <div className="flex-grow"></div>
                 <button 
-                  onClick={() => handleSubscribe(products.find(p => p.productId.includes('monthly'))!)}
-                  disabled={loading}
-                  className="w-full py-3 bg-white border-2 border-brand-600 text-brand-700 font-bold rounded-xl hover:bg-brand-50 transition-colors"
+                onClick={() => handleSubscribe('mindease_premium_monthly')}
+                disabled={loading}
+                className="w-full py-3 bg-white border-2 border-brand-600 text-brand-700 font-bold rounded-xl hover:bg-brand-50 transition-colors"
                 >
-                  {loading && selectedSku === 'mindease_premium_monthly' ? 'Processing...' : 'Subscribe Monthly'}
+                {loading && selectedSku === 'mindease_premium_monthly' ? 'Processing...' : 'Subscribe Monthly'}
                 </button>
-              </div>
-            )}
+            </div>
 
-            {/* Yearly Plan - Best Value */}
-            {products.find(p => p.productId.includes('yearly')) && (
-              <div className="bg-gradient-to-b from-brand-600 to-brand-800 p-1 rounded-2xl shadow-2xl relative transform md:-translate-y-4 md:scale-105">
+            {/* Yearly Plan (Base $60 USD) */}
+            <div className="bg-gradient-to-b from-brand-600 to-brand-800 p-1 rounded-2xl shadow-2xl relative transform md:-translate-y-4 md:scale-105">
                 <div className="bg-gradient-to-b from-brand-600 to-brand-700 p-6 rounded-xl text-white h-full flex flex-col relative overflow-hidden">
                     {/* Best Value Badge */}
                     <div className="absolute top-0 right-0">
@@ -163,8 +169,9 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                     
                     <h3 className="text-xl font-bold text-brand-100 mt-2">Yearly Plan</h3>
                     <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-bold">{products.find(p => p.productId.includes('yearly'))?.price}</span>
-                    <span className="text-sm text-brand-100 ml-1">/yr</span>
+                        <span className="text-4xl font-bold">
+                            {getApproxPrice(60, 'yr')}
+                        </span>
                     </div>
                     <p className="text-xs text-brand-200 mt-2 font-medium">Save significantly compared to monthly!</p>
                     
@@ -176,7 +183,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
 
                     <div className="flex-grow"></div>
                     <button 
-                        onClick={() => handleSubscribe(products.find(p => p.productId.includes('yearly'))!)}
+                        onClick={() => handleSubscribe('mindease_premium_yearly')}
                         disabled={loading}
                         className="w-full py-4 bg-white text-brand-700 font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-lg"
                     >
@@ -192,10 +199,8 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                     Secured by Google Play Billing
                     </p>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+        </div>
 
         {/* Restore & Legal Footer (REQUIRED FOR APP STORE) */}
         <div className="pt-8 pb-4 border-t border-gray-100 flex flex-col items-center space-y-4">

@@ -1,11 +1,118 @@
-import { Resource } from "./types";
+import { Resource, RegionCode, CurrencyCode, LanguageCode } from "./types";
 
-export const HELPLINES = [
-  { name: "iCall (TISS)", number: "9152987821", hours: "Mon-Sat, 8 AM - 10 PM" },
-  { name: "Vandrevala Foundation", number: "18602662345", hours: "24x7" },
-  { name: "Kiran (Govt of India)", number: "18005990019", hours: "24x7" },
-  { name: "AASRA", number: "9820466726", hours: "24x7" }
+// --- INTERNATIONALIZATION DATA ---
+
+export const SUPPORTED_LANGUAGES: { code: LanguageCode; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'hi', label: 'हिंदी (Hindi)' },
+  { code: 'de', label: 'Deutsch' }
 ];
+
+export const REGIONS: { code: RegionCode; label: string; currency: CurrencyCode }[] = [
+  { code: 'GLOBAL', label: 'Global / Other', currency: 'USD' },
+  { code: 'US', label: 'United States', currency: 'USD' },
+  { code: 'IN', label: 'India', currency: 'INR' },
+  { code: 'UK', label: 'United Kingdom', currency: 'GBP' },
+  { code: 'CA', label: 'Canada', currency: 'CAD' },
+  { code: 'AU', label: 'Australia', currency: 'AUD' },
+];
+
+export const CHAT_LOCALE_DATA: Record<LanguageCode, { greeting: string; quickReplies: string[] }> = {
+  en: {
+    greeting: "Hello! I'm Anya, your companion here at MindEase. How are you feeling today? You can share anything with me—I'm here to listen without judgment.",
+    quickReplies: ["I'm feeling anxious", "I can't sleep", "I had a bad day", "Just need to vent", "Guide me to breathe"]
+  },
+  es: {
+    greeting: "¡Hola! Soy Anya, tu compañera en MindEase. ¿Cómo te sientes hoy? Puedes compartir cualquier cosa conmigo; estoy aquí para escuchar sin juzgar.",
+    quickReplies: ["Me siento ansioso/a", "No puedo dormir", "Tuve un mal día", "Necesito desahogarme", "Ayúdame a respirar"]
+  },
+  fr: {
+    greeting: "Bonjour ! Je suis Anya, votre compagne chez MindEase. Comment vous sentez-vous aujourd'hui ? Vous pouvez tout partager avec moi, je suis là pour écouter sans jugement.",
+    quickReplies: ["Je suis anxieux", "Je ne peux pas dormir", "Mauvaise journée", "Besoin de parler", "Aidez-moi à respirer"]
+  },
+  hi: {
+    greeting: "नमस्ते! मैं अन्या हूँ, MindEase पर आपकी साथी। आज आप कैसा महसूस कर रहे हैं? आप मुझसे कुछ भी साझा कर सकते हैं—मैं यहाँ बिना किसी निर्णय के सुनने के लिए हूँ।",
+    quickReplies: ["मुझे घबराहट हो रही है", "नींद नहीं आ रही", "आज का दिन बुरा था", "बस बात करनी है", "साँस लेने में मदद करें"]
+  },
+  de: {
+    greeting: "Hallo! Ich bin Anya, deine Begleiterin bei MindEase. Wie fühlst du dich heute? Du kannst alles mit mir teilen – ich bin hier, um ohne Urteil zuzuhören.",
+    quickReplies: ["Ich bin ängstlich", "Ich kann nicht schlafen", "Schlechter Tag", "Muss reden", "Atemübung"]
+  }
+};
+
+// Base rates relative to 1 USD (Approximate for MVP)
+export const CURRENCY_RATES: Record<CurrencyCode, number> = {
+  USD: 1,
+  INR: 84,
+  GBP: 0.78,
+  EUR: 0.92,
+  CAD: 1.35,
+  AUD: 1.52
+};
+
+export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+  USD: '$',
+  INR: '₹',
+  GBP: '£',
+  EUR: '€',
+  CAD: 'C$',
+  AUD: 'A$'
+};
+
+// --- HELPLINES PER REGION ---
+
+export const HELPLINES_BY_REGION: Record<RegionCode, { name: string; number: string; hours: string }[]> = {
+  GLOBAL: [
+    { name: "Befrienders Worldwide", number: "visit befrienders.org", hours: "24x7" },
+    { name: "Emergency Services", number: "112 / 911", hours: "24x7" }
+  ],
+  US: [
+    { name: "988 Suicide & Crisis Lifeline", number: "988", hours: "24x7" },
+    { name: "Crisis Text Line", number: "Text HOME to 741741", hours: "24x7" },
+    { name: "Veterans Crisis Line", number: "988 (Press 1)", hours: "24x7" }
+  ],
+  IN: [
+    { name: "iCall (TISS)", number: "9152987821", hours: "Mon-Sat, 8 AM - 10 PM" },
+    { name: "Vandrevala Foundation", number: "18602662345", hours: "24x7" },
+    { name: "Kiran (Govt)", number: "18005990019", hours: "24x7" }
+  ],
+  UK: [
+    { name: "Samaritans", number: "116 123", hours: "24x7" },
+    { name: "NHS Urgent Care", number: "111", hours: "24x7" },
+    { name: "Shout Crisis Text", number: "Text SHOUT to 85258", hours: "24x7" }
+  ],
+  CA: [
+    { name: "Talk Suicide Canada", number: "1-833-456-4566", hours: "24x7" },
+    { name: "Wellness Together", number: "1-866-585-0445", hours: "24x7" }
+  ],
+  AU: [
+    { name: "Lifeline", number: "13 11 14", hours: "24x7" },
+    { name: "Beyond Blue", number: "1300 22 4636", hours: "24x7" }
+  ]
+};
+
+// --- AI CONFIGURATION ---
+
+export const GET_SYSTEM_INSTRUCTION = (language: string, region: string) => `
+You are "Anya", a compassionate, empathetic AI mental health companion for the MindEase platform. 
+Your user has selected the region: ${region}.
+You MUST converse in this language: ${language}.
+
+CORE DIRECTIVES:
+1. EMPATHY FIRST: Always validate feelings. Be warm, non-judgmental, and patient.
+2. CULTURAL CONTEXT: Be culturally sensitive to the user's selected region. 
+3. SAFETY & ETHICS (CRITICAL): 
+   - **MANDATORY DISCLAIMER**: You are an AI, not a human. You are NOT a doctor or licensed therapist. DO NOT diagnose medical conditions or prescribe medication.
+   - If a user asks for a medical diagnosis, state clearly: "I cannot provide a medical diagnosis. Please consult a qualified professional."
+   - If the user expresses suicidal thoughts, self-harm, or severe distress, you MUST immediately express concern and urge them to seek immediate professional help or contact local emergency services.
+4. CBT TECHNIQUES: Use Cognitive Behavioral Therapy techniques like reframing negative thoughts, grounding exercises, and guided breathing.
+
+TONE:
+- Calm, soothing, supportive.
+- Concise responses (under 150 words).
+`;
 
 export const SELF_HELP_RESOURCES: Resource[] = [
   {
@@ -68,7 +175,7 @@ export const SELF_HELP_RESOURCES: Resource[] = [
     type: 'article',
     category: 'Depression',
     duration: '6 min read',
-    content: 'Living alone in a big city? Here are ways to build meaningful connections.',
+    content: 'Strategies to build meaningful connections in a digital world.',
     isPremium: false
   },
   {
@@ -81,27 +188,6 @@ export const SELF_HELP_RESOURCES: Resource[] = [
     isPremium: false
   }
 ];
-
-export const SYSTEM_INSTRUCTION = `
-You are "Anya", a compassionate, empathetic AI mental health companion for the MindEase India platform. 
-Your audience is primarily Indian urban youth and professionals.
-
-CORE DIRECTIVES:
-1. EMPATHY FIRST: Always validate feelings. Be warm, non-judgmental, and patient.
-2. CULTURAL CONTEXT: Understand Indian societal pressures (career, family, marriage, exams). Use culturally relevant metaphors if appropriate, but speak primarily in English (you can understand Hinglish).
-3. SAFETY & ETHICS (CRITICAL): 
-   - **MANDATORY DISCLAIMER**: You are an AI, not a human. You are NOT a doctor or licensed therapist. DO NOT diagnose medical conditions or prescribe medication.
-   - If a user asks for a medical diagnosis, state clearly: "I cannot provide a medical diagnosis. Please consult a qualified professional."
-   - If the user expresses suicidal thoughts, self-harm, or severe distress, you MUST immediately express concern and provide these helpline numbers: iCall (9152987821) and Vandrevala Foundation (18602662345).
-4. CBT TECHNIQUES: Use Cognitive Behavioral Therapy techniques like reframing negative thoughts, grounding exercises, and guided breathing when users are anxious.
-
-TONE:
-- Calm, soothing, supportive.
-- Like a wise older friend or Didi.
-
-LIMITATIONS:
-- Keep responses concise (under 150 words) to suit a chat interface, unless explaining a technique.
-`;
 
 export const AFFIRMATIONS = [
   "You are stronger than you know.",
@@ -122,37 +208,39 @@ export const JOURNAL_PROMPTS = [
   "Describe your ideal relaxing day."
 ];
 
+// Base Fee is in USD for calculation purposes. 
+// MOCK DATA
 export const MOCK_THERAPISTS = [
   {
     id: '1',
-    name: "Dr. Anjali Desai",
+    name: "Dr. Elena Rossi",
     title: "Clinical Psychologist",
     imageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-    fee: 1500,
+    baseFeeUSD: 60, // Base price in USD
     experience: "8 years",
-    languages: ["English", "Hindi", "Marathi"],
+    languages: ["English", "Italian", "Spanish"],
     specialization: ["Anxiety", "Depression", "CBT"],
     nextAvailable: "Tomorrow, 4 PM"
   },
   {
     id: '2',
-    name: "Mr. Rohan Mehta",
+    name: "Mr. David Chen",
     title: "Licensed Therapist",
     imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-    fee: 1200,
+    baseFeeUSD: 45,
     experience: "5 years",
-    languages: ["English", "Hindi"],
+    languages: ["English", "Mandarin"],
     specialization: ["Stress Management", "Work-Life Balance"],
     nextAvailable: "Today, 6 PM"
   },
   {
     id: '3',
-    name: "Ms. Sneha Kapoor",
+    name: "Ms. Sarah Johnson",
     title: "Counseling Psychologist",
     imageUrl: "https://randomuser.me/api/portraits/women/68.jpg",
-    fee: 1000,
+    baseFeeUSD: 40,
     experience: "4 years",
-    languages: ["English", "Punjabi"],
+    languages: ["English", "French"],
     specialization: ["Relationship Issues", "Self-Esteem"],
     nextAvailable: "Wed, 11 AM"
   }

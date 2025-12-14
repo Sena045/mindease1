@@ -29,4 +29,15 @@ export enum AppView {
   MOOD = 'MOOD',
   TOOLS = 'TOOLS',
   PREMIUM = 'PREMIUM',
+  SETTINGS = 'SETTINGS',
+}
+
+export type RegionCode = 'GLOBAL' | 'IN' | 'US' | 'UK' | 'CA' | 'AU';
+export type CurrencyCode = 'USD' | 'INR' | 'GBP' | 'EUR' | 'CAD' | 'AUD';
+export type LanguageCode = 'en' | 'hi' | 'es' | 'fr' | 'de';
+
+export interface UserSettings {
+  region: RegionCode;
+  currency: CurrencyCode;
+  language: LanguageCode;
 }

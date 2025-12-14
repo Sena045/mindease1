@@ -4,11 +4,26 @@ import MoodTracker from './components/MoodTracker';
 import WellnessTools from './components/WellnessTools';
 import SubscriptionView from './components/SubscriptionView';
 import Navigation from './components/Navigation';
-import { AppView } from './types';
+import TherapistDirectory from './components/TherapistDirectory';
+import SettingsModal from './components/SettingsModal';
+import { AppView, UserSettings } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.CHAT);
   const [isPremium, setIsPremium] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Default Settings: GLOBAL
+  const [settings, setSettings] = useState<UserSettings>({
+    region: 'GLOBAL',
+    currency: 'USD',
+    language: 'en'
+  });
+
+  const handleSettingsUpdate = (newSettings: UserSettings) => {
+    setSettings(newSettings);
+    // In a real app, save to localStorage here
+  };
 
   const renderContent = () => {
     switch (currentView) {
@@ -18,6 +33,7 @@ const App: React.FC = () => {
             isPremium={isPremium}
             onUnlock={() => setCurrentView(AppView.PREMIUM)}
             onNavigate={(view) => setCurrentView(view)}
+            settings={settings}
           />
         );
       case AppView.MOOD:
@@ -38,15 +54,22 @@ const App: React.FC = () => {
         return (
           <SubscriptionView 
             isPremium={isPremium} 
-            onSubscribe={() => setIsPremium(true)} 
+            onSubscribe={() => setIsPremium(true)}
+            currency={settings.currency} 
           />
         );
+      case AppView.SETTINGS:
+        // We open the modal instead of a full view for settings
+        setIsSettingsOpen(true);
+        setCurrentView(AppView.CHAT); // Go back to chat
+        return null;
       default:
         return (
           <ChatInterface 
             isPremium={isPremium}
             onUnlock={() => setCurrentView(AppView.PREMIUM)}
             onNavigate={(view) => setCurrentView(view)}
+            settings={settings}
           />
         );
     }
@@ -55,25 +78,45 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-calm-bg font-sans overflow-hidden">
       
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleSettingsUpdate}
+      />
+
       {/* Main Layout Container */}
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         
         {/* Desktop Sidebar (Hidden on Mobile) */}
-        <div className="hidden md:block h-full shadow-xl z-20">
-          <Navigation 
+        <div className="hidden md:block h-full shadow-xl z-20 relative">
+           <Navigation 
             currentView={currentView} 
-            setView={setCurrentView} 
+            setView={(view) => {
+               if(view === AppView.SETTINGS) setIsSettingsOpen(true);
+               else setCurrentView(view);
+            }} 
             isPremium={isPremium}
           />
+          {/* Settings Button Desktop */}
+          <div className="absolute bottom-4 left-0 w-full px-4">
+             <button onClick={() => setIsSettingsOpen(true)} className="flex items-center text-gray-400 hover:text-brand-600 w-full p-2">
+                <i className="fa-solid fa-globe mr-2"></i> Settings
+             </button>
+          </div>
         </div>
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto relative w-full flex flex-col">
           {/* Mobile Header */}
-          <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-center sticky top-0 z-30 shadow-sm">
+          <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
              <h1 className="text-lg font-bold text-brand-700 flex items-center gap-2">
               <i className="fa-solid fa-spa"></i> MindEase
             </h1>
+            <button onClick={() => setIsSettingsOpen(true)} className="text-gray-400 hover:text-brand-600">
+                <i className="fa-solid fa-globe text-lg"></i>
+            </button>
           </div>
 
           <div className="flex-1 w-full">
@@ -85,7 +128,10 @@ const App: React.FC = () => {
         <div className="md:hidden z-30">
           <Navigation 
             currentView={currentView} 
-            setView={setCurrentView} 
+            setView={(view) => {
+               if(view === AppView.SETTINGS) setIsSettingsOpen(true);
+               else setCurrentView(view);
+            }} 
             isPremium={isPremium}
           />
         </div>
