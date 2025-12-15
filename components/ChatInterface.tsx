@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, AppView, UserSettings } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
+import { playChatSound } from '../services/soundEffects';
 import AffirmationWidget from './AffirmationWidget';
+import Logo from './Logo';
 import { CHAT_LOCALE_DATA } from '../constants';
 
 interface ChatInterfaceProps {
@@ -61,6 +63,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
     setInput('');
     setIsLoading(true);
 
+    // Play Send Sound
+    if (settings.soundEnabled) playChatSound('send');
+
     const newUserMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -81,6 +86,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
       };
       setMessages(prev => [...prev, safetyMessage]);
       setIsLoading(false);
+      // Play Receive Sound (even for safety msg)
+      if (settings.soundEnabled) playChatSound('receive');
       return;
     }
 
@@ -102,6 +109,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
       };
 
       setMessages(prev => [...prev, modelMessage]);
+      // Play Receive Sound
+      if (settings.soundEnabled) playChatSound('receive');
+
     } catch (error) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -141,10 +151,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
   return (
     <div className="flex flex-col h-full bg-calm-bg">
       {/* Disclaimer / Counter */}
-      <div className="bg-blue-50 p-2 text-center text-[10px] text-blue-600 border-b border-blue-100 flex justify-between px-4 z-10 shadow-sm">
+      <div className="bg-blue-50 p-2 text-center text-[10px] text-blue-800 border-b border-blue-100 flex justify-between px-4 z-10 shadow-sm">
         <span>Bot generated. Not medical advice.</span>
         {!isPremium && (
-          <span className={`font-bold ${msgsLeft <= 2 ? 'text-red-500' : 'text-blue-600'}`}>
+          <span className={`font-bold ${msgsLeft <= 2 ? 'text-red-600' : 'text-blue-700'}`}>
             {msgsLeft > 0 ? `${msgsLeft} free messages left` : 'Limit reached'}
           </span>
         )}
@@ -153,7 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto pb-4 space-y-5">
         {/* Daily Affirmation Widget at the top of chat */}
-        <AffirmationWidget />
+        <AffirmationWidget language={settings.language} />
 
         <div className="px-4 space-y-6">
           {messages.map((msg) => {
@@ -162,25 +172,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
             return (
               <div
                 key={msg.id}
-                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-slide-up`}
               >
                 {/* Avatar / Name for Bot */}
                 {msg.role === 'model' && (
                   <div className="flex items-center space-x-2 mb-1 ml-1">
                     <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center border border-brand-200">
-                      <i className="fa-solid fa-spa text-brand-600 text-[10px]"></i>
+                      <Logo className="w-4 h-4 text-brand-700" />
                     </div>
-                    <span className="text-xs text-gray-400 font-medium">Anya</span>
+                    <span className="text-xs text-gray-500 font-medium">Anya</span>
                   </div>
                 )}
 
                 <div
                   className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 shadow-sm text-sm md:text-base leading-relaxed whitespace-pre-wrap ${
                     msg.role === 'user'
-                      ? 'bg-brand-600 text-white rounded-br-none shadow-brand-500/20'
+                      ? 'bg-brand-700 text-white rounded-br-none shadow-brand-600/20'
                       : msg.isError 
                         ? 'bg-red-50 text-red-800 border border-red-100 rounded-bl-none'
-                        : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
+                        : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
                   }`}
                 >
                   {msg.text}
@@ -190,7 +200,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
                 {smartAction && (
                   <button
                     onClick={() => onNavigate(smartAction.view)}
-                    className="mt-2 ml-1 bg-white border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2 rounded-xl shadow-sm hover:bg-brand-50 transition-colors flex items-center gap-2 animate-fade-in"
+                    className="mt-2 ml-1 bg-white border border-brand-200 text-brand-800 text-xs font-semibold px-4 py-2 rounded-xl shadow-sm hover:bg-brand-50 transition-colors flex items-center gap-2 animate-fade-in"
                   >
                     <i className={`fa-solid ${smartAction.icon}`}></i>
                     {smartAction.label}
@@ -198,7 +208,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
                 )}
                 
                 {/* Timestamp */}
-                <span className={`text-[10px] text-gray-300 mt-1 px-1 ${msg.role === 'user' ? 'mr-1' : 'ml-1'}`}>
+                <span className={`text-[10px] text-gray-400 mt-1 px-1 ${msg.role === 'user' ? 'mr-1' : 'ml-1'}`}>
                   {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </span>
               </div>
@@ -209,15 +219,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
             <div className="flex flex-col items-start space-y-1 animate-fade-in">
                <div className="flex items-center space-x-2 ml-1">
                     <div className="w-6 h-6 rounded-full bg-brand-50 flex items-center justify-center">
-                      <i className="fa-solid fa-spa text-brand-300 text-[10px]"></i>
+                       <Logo className="w-3 h-3 text-brand-400" />
                     </div>
                     <span className="text-xs text-gray-400">Anya is typing...</span>
                </div>
               <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
                 <div className="flex space-x-1.5 items-center h-5">
-                  <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce delay-200"></div>
+                  <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce delay-200"></div>
                 </div>
               </div>
             </div>
@@ -230,7 +240,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
       {isLimitReached ? (
         <div className="bg-white p-6 border-t border-gray-200 sticky bottom-0 z-20 flex flex-col items-center text-center space-y-3 shadow-lg">
           <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center animate-bounce">
-             <i className="fa-solid fa-lock text-yellow-600 text-xl"></i>
+             <i className="fa-solid fa-lock text-yellow-700 text-xl"></i>
           </div>
           <div>
               <h3 className="font-bold text-gray-800 text-lg">Daily Limit Reached</h3>
@@ -240,7 +250,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
           </div>
           <button 
               onClick={onUnlock}
-              className="w-full max-w-sm bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-105 shadow-md flex items-center justify-center gap-2"
+              className="w-full max-w-sm bg-gradient-to-r from-brand-700 to-brand-800 hover:from-brand-800 hover:to-brand-900 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-105 shadow-md flex items-center justify-center gap-2"
           >
               <i className="fa-solid fa-crown text-yellow-300"></i> Unlock Unlimited Access
           </button>
@@ -254,7 +264,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
                 <button
                   key={index}
                   onClick={() => handleSend(reply)}
-                  className="whitespace-nowrap bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs px-3 py-1.5 rounded-full border border-brand-100 transition-colors"
+                  className="whitespace-nowrap bg-brand-50 hover:bg-brand-100 text-brand-800 text-xs px-3 py-1.5 rounded-full border border-brand-200 transition-colors"
                 >
                   {reply}
                 </button>
@@ -269,7 +279,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Type your thoughts here..."
-                className="flex-1 bg-gray-100 text-gray-800 rounded-3xl py-3 px-5 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none h-12 max-h-32 scrollbar-hide text-sm leading-relaxed"
+                className="flex-1 bg-gray-50 text-gray-800 rounded-3xl py-3 px-5 focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none h-12 max-h-32 scrollbar-hide text-sm leading-relaxed border border-gray-200"
                 rows={1}
               />
               <button
@@ -278,7 +288,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPremium, onUnlock, onNa
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all transform ${
                   !input.trim() || isLoading
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed scale-95'
-                    : 'bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:scale-105'
+                    : 'bg-brand-700 hover:bg-brand-800 text-white shadow-md hover:scale-105'
                 }`}
               >
                 <i className={`fa-solid fa-paper-plane text-sm ${isLoading ? 'animate-pulse' : ''}`}></i>

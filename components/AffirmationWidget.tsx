@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { AFFIRMATIONS } from '../constants';
+import { LanguageCode } from '../types';
 
-const AffirmationWidget: React.FC = () => {
+interface AffirmationWidgetProps {
+  language?: LanguageCode;
+}
+
+const AffirmationWidget: React.FC<AffirmationWidgetProps> = ({ language = 'en' }) => {
   const [affirmation, setAffirmation] = useState('');
 
   useEffect(() => {
-    // Pick a random affirmation on mount
-    const random = AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)];
+    // Pick a random affirmation on mount or language change
+    // Fallback to 'en' if language not found
+    const list = AFFIRMATIONS[language] || AFFIRMATIONS['en'];
+    const random = list[Math.floor(Math.random() * list.length)];
     setAffirmation(random);
-  }, []);
+  }, [language]);
 
   return (
     <div className="mx-4 mt-4 mb-2 p-4 bg-gradient-to-r from-brand-50 to-white rounded-xl border border-brand-100 shadow-sm relative overflow-hidden">

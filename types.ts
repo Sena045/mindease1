@@ -40,4 +40,5 @@ export interface UserSettings {
   region: RegionCode;
   currency: CurrencyCode;
   language: LanguageCode;
+  soundEnabled: boolean;
 }

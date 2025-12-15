@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, requestPurchase, restorePurchases, Product } from '../services/billingService';
-import { CurrencyCode } from '../types';
-import { CURRENCY_RATES, CURRENCY_SYMBOLS } from '../constants';
+import { getProducts, requestPurchase, restorePurchases, Product, USE_MOCK_BILLING } from '../services/billingService';
+import { CurrencyCode, RegionCode } from '../types';
+import { REGIONAL_PRICING } from '../constants';
 
 interface SubscriptionViewProps {
   onSubscribe: () => void;
   isPremium: boolean;
   currency: CurrencyCode;
+  region: RegionCode;
 }
 
-const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPremium, currency }) => {
+const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPremium, currency, region }) => {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
+
+  // Get specific pricing for the current region or fallback to Global
+  const currentPricing = REGIONAL_PRICING[region] || REGIONAL_PRICING['GLOBAL'];
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -31,7 +35,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
       const success = await requestPurchase(productId);
       if (success) {
         onSubscribe();
-        alert(`🎉 Subscription Confirmed!\n\nThank you for choosing MindEase Premium.`);
+        alert(`🎉 Subscription Confirmed!\n\nThank you for choosing ReliefAnchor Premium.`);
       }
     } catch (error) {
       alert("Purchase failed. Please try again.");
@@ -53,17 +57,16 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
     }
   };
 
-  // Helper to show approximate price if Google Play is not loaded yet (or web preview)
-  const getApproxPrice = (usd: number, type: 'mo' | 'yr') => {
-    // If we have store products, use those (they are accurate)
-    // Note: getProducts implementation currently returns Mock data on web.
-    // For this Multi-Currency feature, we will manually calculate display prices 
-    // unless products are strictly loaded from a real store.
-    
-    const rate = CURRENCY_RATES[currency];
-    const symbol = CURRENCY_SYMBOLS[currency];
-    const val = Math.round(usd * rate);
-    return `${symbol}${val}/${type}`;
+  const openSubscriptionManagement = () => {
+    // Opens the Google Play Subscriptions management page
+    window.open('https://play.google.com/store/account/subscriptions', '_blank');
+  };
+
+  // Helper to get dynamic next billing date (1 year from now for MVP)
+  const getNextBillingDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   if (isPremium) {
@@ -89,12 +92,26 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-500">Next Billing</span>
-            <span className="font-semibold text-gray-900">25 Dec 2025</span>
+            <span className="font-semibold text-gray-900">{getNextBillingDate()}</span>
           </div>
         </div>
-        <button className="text-brand-600 text-sm font-medium hover:underline mt-4">
-          Manage Subscription on Google Play
-        </button>
+
+        {/* Management Actions */}
+        <div className="w-full max-w-sm space-y-4 pt-4 border-t border-gray-100">
+             <button 
+                onClick={openSubscriptionManagement}
+                className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 shadow-sm transition-colors flex items-center justify-center gap-2"
+             >
+                <i className="fa-brands fa-google-play text-gray-500"></i> Manage Subscription
+             </button>
+             
+             <div className="bg-blue-50 p-3 rounded-lg text-left">
+                <p className="text-xs text-blue-800 leading-relaxed">
+                   <i className="fa-solid fa-circle-info mr-1"></i>
+                   <strong>Cancellation Policy:</strong> Your subscription is managed securely by Google Play. To cancel or change your plan, please click the button above to visit your Google Play account settings.
+                </p>
+             </div>
+        </div>
       </div>
     );
   }
@@ -102,13 +119,24 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
   return (
     <div className="p-4 pb-24 overflow-y-auto h-full">
       <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Verification Status Notice */}
+        {USE_MOCK_BILLING && (
+           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
+              <p className="text-xs text-blue-800">
+                <i className="fa-solid fa-info-circle mr-1"></i>
+                <strong>Region Detected:</strong> {region === 'IN' ? 'India' : region === 'US' ? 'United States' : region === 'UK' ? 'United Kingdom' : region} | <strong>Pricing:</strong> Localized (Mock)
+              </p>
+           </div>
+        )}
+
         <div className="text-center space-y-2 mt-4">
           <span className="bg-brand-100 text-brand-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
             Upgrade to Premium
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Unlock Your Full Potential</h2>
           <p className="text-gray-600 text-sm md:text-base max-w-md mx-auto">
-            Experience complete peace of mind with unlimited access to all MindEase features.
+            Experience complete peace of mind with unlimited access to all ReliefAnchor features.
           </p>
         </div>
 
@@ -134,12 +162,12 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            {/* Monthly Plan (Base $6 USD) */}
+            {/* Monthly Plan */}
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-300 transition-all relative flex flex-col h-full">
                 <h3 className="text-lg font-bold text-gray-700">Monthly Plan</h3>
                 <div className="mt-4 flex items-baseline">
                     <span className="text-3xl font-bold text-gray-900">
-                        {getApproxPrice(6, 'mo')}
+                        {currentPricing.currencySymbol}{currentPricing.monthly}/mo
                     </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Perfect for short-term goals. Flexible & cancel anytime.</p>
@@ -157,7 +185,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                 </button>
             </div>
 
-            {/* Yearly Plan (Base $60 USD) */}
+            {/* Yearly Plan */}
             <div className="bg-gradient-to-b from-brand-600 to-brand-800 p-1 rounded-2xl shadow-2xl relative transform md:-translate-y-4 md:scale-105">
                 <div className="bg-gradient-to-b from-brand-600 to-brand-700 p-6 rounded-xl text-white h-full flex flex-col relative overflow-hidden">
                     {/* Best Value Badge */}
@@ -170,7 +198,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSubscribe, isPrem
                     <h3 className="text-xl font-bold text-brand-100 mt-2">Yearly Plan</h3>
                     <div className="mt-4 flex items-baseline">
                         <span className="text-4xl font-bold">
-                            {getApproxPrice(60, 'yr')}
+                           {currentPricing.currencySymbol}{currentPricing.yearly}/yr
                         </span>
                     </div>
                     <p className="text-xs text-brand-200 mt-2 font-medium">Save significantly compared to monthly!</p>

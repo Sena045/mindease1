@@ -21,23 +21,23 @@ export const REGIONS: { code: RegionCode; label: string; currency: CurrencyCode 
 
 export const CHAT_LOCALE_DATA: Record<LanguageCode, { greeting: string; quickReplies: string[] }> = {
   en: {
-    greeting: "Hello! I'm Anya, your companion here at MindEase. How are you feeling today? You can share anything with me—I'm here to listen without judgment.",
+    greeting: "Hello! I'm Anya, your companion here at ReliefAnchor. How are you feeling today? You can share anything with me—I'm here to listen without judgment.",
     quickReplies: ["I'm feeling anxious", "I can't sleep", "I had a bad day", "Just need to vent", "Guide me to breathe"]
   },
   es: {
-    greeting: "¡Hola! Soy Anya, tu compañera en MindEase. ¿Cómo te sientes hoy? Puedes compartir cualquier cosa conmigo; estoy aquí para escuchar sin juzgar.",
+    greeting: "¡Hola! Soy Anya, tu compañera en ReliefAnchor. ¿Cómo te sientes hoy? Puedes compartir cualquier cosa conmigo; estoy aquí para escuchar sin juzgar.",
     quickReplies: ["Me siento ansioso/a", "No puedo dormir", "Tuve un mal día", "Necesito desahogarme", "Ayúdame a respirar"]
   },
   fr: {
-    greeting: "Bonjour ! Je suis Anya, votre compagne chez MindEase. Comment vous sentez-vous aujourd'hui ? Vous pouvez tout partager avec moi, je suis là pour écouter sans jugement.",
+    greeting: "Bonjour ! Je suis Anya, votre compagne chez ReliefAnchor. Comment vous sentez-vous aujourd'hui ? Vous pouvez tout partager avec moi, je suis là pour écouter sans jugement.",
     quickReplies: ["Je suis anxieux", "Je ne peux pas dormir", "Mauvaise journée", "Besoin de parler", "Aidez-moi à respirer"]
   },
   hi: {
-    greeting: "नमस्ते! मैं अन्या हूँ, MindEase पर आपकी साथी। आज आप कैसा महसूस कर रहे हैं? आप मुझसे कुछ भी साझा कर सकते हैं—मैं यहाँ बिना किसी निर्णय के सुनने के लिए हूँ।",
+    greeting: "नमस्ते! मैं अन्या हूँ, ReliefAnchor पर आपकी साथी। आज आप कैसा महसूस कर रहे हैं? आप मुझसे कुछ भी साझा कर सकते हैं—मैं यहाँ बिना किसी निर्णय के सुनने के लिए हूँ।",
     quickReplies: ["मुझे घबराहट हो रही है", "नींद नहीं आ रही", "आज का दिन बुरा था", "बस बात करनी है", "साँस लेने में मदद करें"]
   },
   de: {
-    greeting: "Hallo! Ich bin Anya, deine Begleiterin bei MindEase. Wie fühlst du dich heute? Du kannst alles mit mir teilen – ich bin hier, um ohne Urteil zuzuhören.",
+    greeting: "Hallo! Ich bin Anya, deine Begleiterin bei ReliefAnchor. Wie fühlst du dich heute? Du kannst alles mit mir teilen – ich bin hier, um ohne Urteil zuzuhören.",
     quickReplies: ["Ich bin ängstlich", "Ich kann nicht schlafen", "Schlechter Tag", "Muss reden", "Atemübung"]
   }
 };
@@ -59,6 +59,17 @@ export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   EUR: '€',
   CAD: 'C$',
   AUD: 'A$'
+};
+
+// Pricing Tiers specifically tuned for purchasing power parity (PPP)
+// Based on approx base of ₹500 INR (~$6 USD)
+export const REGIONAL_PRICING: Record<RegionCode, { monthly: string; yearly: string; currencySymbol: string }> = {
+  IN: { monthly: '500', yearly: '2,499', currencySymbol: '₹' },
+  US: { monthly: '5.99', yearly: '29.99', currencySymbol: '$' },
+  UK: { monthly: '4.99', yearly: '24.99', currencySymbol: '£' },
+  CA: { monthly: '7.99', yearly: '39.99', currencySymbol: 'C$' },
+  AU: { monthly: '8.99', yearly: '44.99', currencySymbol: 'A$' },
+  GLOBAL: { monthly: '5.99', yearly: '29.99', currencySymbol: '$' }
 };
 
 // --- HELPLINES PER REGION ---
@@ -96,7 +107,7 @@ export const HELPLINES_BY_REGION: Record<RegionCode, { name: string; number: str
 // --- AI CONFIGURATION ---
 
 export const GET_SYSTEM_INSTRUCTION = (language: string, region: string) => `
-You are "Anya", a compassionate, empathetic AI mental health companion for the MindEase platform. 
+You are "Anya", a compassionate, empathetic AI mental health companion for the ReliefAnchor platform. 
 Your user has selected the region: ${region}.
 You MUST converse in this language: ${language}.
 
@@ -189,15 +200,53 @@ export const SELF_HELP_RESOURCES: Resource[] = [
   }
 ];
 
-export const AFFIRMATIONS = [
-  "You are stronger than you know.",
-  "This feeling is temporary. You will get through this.",
-  "You are allowed to take up space.",
-  "One day at a time. One breath at a time.",
-  "Your productivity does not define your worth.",
-  "It is okay to rest.",
-  "You are enough, just as you are."
-];
+export const AFFIRMATIONS: Record<LanguageCode, string[]> = {
+  en: [
+    "You are stronger than you know.",
+    "This feeling is temporary. You will get through this.",
+    "You are allowed to take up space.",
+    "One day at a time. One breath at a time.",
+    "Your productivity does not define your worth.",
+    "It is okay to rest.",
+    "You are enough, just as you are."
+  ],
+  es: [
+    "Eres más fuerte de lo que crees.",
+    "Este sentimiento es temporal. Lo superarás.",
+    "Tienes derecho a ocupar espacio.",
+    "Un día a la vez. Una respiración a la vez.",
+    "Tu productividad no define tu valor.",
+    "Está bien descansar.",
+    "Eres suficiente, tal como eres."
+  ],
+  fr: [
+    "Vous êtes plus fort que vous ne le pensez.",
+    "Ce sentiment est temporaire. Vous allez vous en sortir.",
+    "Vous avez le droit de prendre de la place.",
+    "Un jour à la fois. Une respiration à la fois.",
+    "Votre productivité ne définit pas votre valeur.",
+    "Il est permis de se reposer.",
+    "Vous suffisez, tel que vous êtes."
+  ],
+  hi: [
+    "आप अपनी सोच से भी ज्यादा मजबूत हैं।",
+    "यह भावना अस्थायी है। आप इससे उबर जाएंगे।",
+    "आपको अपनी जगह लेने का पूरा अधिकार है।",
+    "एक समय में एक दिन। एक समय में एक सांस।",
+    "आपकी उत्पादकता आपकी कीमत तय नहीं करती।",
+    "आराम करना ठीक है।",
+    "आप जैसे हैं, वैसे ही काफी हैं।"
+  ],
+  de: [
+    "Du bist stärker als du denkst.",
+    "Dieses Gefühl ist vorübergehend. Du wirst es überstehen.",
+    "Du darfst Raum einnehmen.",
+    "Einen Tag nach dem anderen. Einen Atemzug nach dem anderen.",
+    "Deine Produktivität bestimmt nicht deinen Wert.",
+    "Es ist okay, sich auszuruhen.",
+    "Du bist genug, so wie du bist."
+  ]
+};
 
 export const JOURNAL_PROMPTS = [
   "What is one thing that made you smile today?",

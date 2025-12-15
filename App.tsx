@@ -6,6 +6,7 @@ import SubscriptionView from './components/SubscriptionView';
 import Navigation from './components/Navigation';
 import TherapistDirectory from './components/TherapistDirectory';
 import SettingsModal from './components/SettingsModal';
+import Logo from './components/Logo';
 import { AppView, UserSettings } from './types';
 
 const App: React.FC = () => {
@@ -13,11 +14,12 @@ const App: React.FC = () => {
   const [isPremium, setIsPremium] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  // Default Settings: GLOBAL
+  // Default Settings: GLOBAL, Sound Enabled
   const [settings, setSettings] = useState<UserSettings>({
     region: 'GLOBAL',
     currency: 'USD',
-    language: 'en'
+    language: 'en',
+    soundEnabled: true
   });
 
   const handleSettingsUpdate = (newSettings: UserSettings) => {
@@ -56,6 +58,7 @@ const App: React.FC = () => {
             isPremium={isPremium} 
             onSubscribe={() => setIsPremium(true)}
             currency={settings.currency} 
+            region={settings.region}
           />
         );
       case AppView.SETTINGS:
@@ -101,7 +104,7 @@ const App: React.FC = () => {
           />
           {/* Settings Button Desktop */}
           <div className="absolute bottom-4 left-0 w-full px-4">
-             <button onClick={() => setIsSettingsOpen(true)} className="flex items-center text-gray-400 hover:text-brand-600 w-full p-2">
+             <button onClick={() => setIsSettingsOpen(true)} className="flex items-center text-gray-600 hover:text-brand-800 w-full p-2 font-medium">
                 <i className="fa-solid fa-globe mr-2"></i> Settings
              </button>
           </div>
@@ -110,11 +113,12 @@ const App: React.FC = () => {
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto relative w-full flex flex-col">
           {/* Mobile Header */}
-          <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-             <h1 className="text-lg font-bold text-brand-700 flex items-center gap-2">
-              <i className="fa-solid fa-spa"></i> MindEase
+          <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+             <h1 className="text-xl font-bold text-brand-900 flex items-center gap-2">
+              <Logo className="w-8 h-8 text-brand-700" />
+              ReliefAnchor
             </h1>
-            <button onClick={() => setIsSettingsOpen(true)} className="text-gray-400 hover:text-brand-600">
+            <button onClick={() => setIsSettingsOpen(true)} className="text-gray-600 hover:text-brand-800">
                 <i className="fa-solid fa-globe text-lg"></i>
             </button>
           </div>

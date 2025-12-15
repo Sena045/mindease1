@@ -46,7 +46,8 @@ declare global {
 // --- CONFIGURATION ---
 // CRITICAL: Set to FALSE for the .aab file you upload to Google Play.
 // If TRUE, Google will reject the app for bypassing real payments.
-const USE_MOCK_BILLING = false;
+// CHANGED: Enabled Mock Billing because Google Play profile is under verification.
+export const USE_MOCK_BILLING = true;
 
 // --- MOCK DATA (Fallback) ---
 const MOCK_PRODUCTS: Product[] = [
@@ -61,7 +62,7 @@ const MOCK_PRODUCTS: Product[] = [
   {
     productId: 'mindease_premium_yearly',
     title: 'Yearly Premium (Test)',
-    price: '₹5,000',
+    price: '₹2,499',
     currency: 'INR',
     description: 'Unlimited access for one year',
     subscriptionPeriod: 'P1Y'
