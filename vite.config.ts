@@ -5,22 +5,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react()],
-    base: '/', // Absolute path is safer for Netlify than './' unless in a subdirectory
+    base: '/', // CRITICAL: Ensures assets load correctly on Netlify
     define: {
       'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY || process.env.API_KEY || '')
     },
     build: {
       outDir: 'dist',
-      assetsDir: 'assets',
-      sourcemap: false,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'recharts', 'lucide-react'],
-            genai: ['@google/genai']
-          }
-        }
-      }
+      emptyOutDir: true,
+      sourcemap: false
     },
     server: {
       port: 3000,
