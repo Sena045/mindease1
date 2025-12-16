@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY || process.env.API_KEY || '')
     },
+    resolve: {
+      // CRITICAL FIX: Forces Vite to look for 'node' exports if browser is missing
+      // This solves the [commonjs--resolver] error for @google/genai
+      conditions: ['node', 'import', 'module', 'browser', 'default']
+    },
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
