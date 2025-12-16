@@ -5,7 +5,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react()],
-    // CRITICAL: Set base to './' for relative paths in AI Studio/sandboxed environments
+    // Base must be relative for portable builds (fixes 404s on deploy)
     base: './',
     define: {
       'process.env': {
@@ -19,14 +19,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       sourcemap: false,
       rollupOptions: {
-        // Externalize @google/genai to prevent bundling errors. 
-        // The browser will resolve this using the importmap in index.html.
+        // Only externalize the AI SDK, bundle everything else (React, etc)
         external: ['@google/genai'],
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react-is'],
-            charts: ['recharts'],
-          }
+          // Simple naming to prevent hash mismatch errors during dev/refresh
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]'
         }
       }
     },
