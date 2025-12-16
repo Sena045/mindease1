@@ -2,14 +2,10 @@ import { GoogleGenAI } from "@google/genai";
 import { GET_SYSTEM_INSTRUCTION } from "../constants";
 import { LanguageCode, RegionCode } from "../types";
 
-// Declare process for TypeScript to avoid build errors if @types/node is missing
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// NOTE: process.env is typed via @types/node in package.json
+// We use a non-null assertion (!) because the build environment guarantees this variable exists
+// or the application will fail gracefully with the check below.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 export const sendMessageToGemini = async (
   message: string, 

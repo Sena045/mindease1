@@ -41,7 +41,10 @@ export const getProducts = async (): Promise<Product[]> => {
 
 export const requestPurchase = async (productId: string): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.Razorpay) {
+    // Cast window to any to avoid TypeScript errors if global type isn't picked up
+    const win = window as any;
+    
+    if (typeof window === 'undefined' || !win.Razorpay) {
       alert("Razorpay SDK not loaded. Please check your internet connection.");
       resolve(false);
       return;
@@ -86,7 +89,7 @@ export const requestPurchase = async (productId: string): Promise<boolean> => {
     };
 
     try {
-      const rzp1 = new window.Razorpay(options);
+      const rzp1 = new win.Razorpay(options);
       rzp1.on('payment.failed', function (response: any){
         console.error("Payment Failed", response.error);
         alert(`Payment Failed: ${response.error.description}`);
