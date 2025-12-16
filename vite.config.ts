@@ -19,11 +19,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       sourcemap: false,
       rollupOptions: {
+        // Externalize @google/genai to prevent bundling errors. 
+        // The browser will resolve this using the importmap in index.html.
+        external: ['@google/genai'],
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-is'],
             charts: ['recharts'],
-            utils: ['@google/genai']
           }
         }
       }
