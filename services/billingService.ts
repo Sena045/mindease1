@@ -10,9 +10,8 @@ export interface Product {
 }
 
 // --- CONFIGURATION ---
-// TODO: Replace with your actual Razorpay Key ID from the Razorpay Dashboard (Settings > API Keys)
-// Use 'rzp_test_...' for testing, and 'rzp_live_...' when you go live.
-const RAZORPAY_KEY_ID = 'rzp_test_YOUR_KEY_HERE'; 
+// Razorpay Key ID from Dashboard (Settings > API Keys)
+const RAZORPAY_KEY_ID = 'rzp_test_RsET8c7WDOT3UM'; 
 
 const PRODUCTS: Product[] = [
   {
