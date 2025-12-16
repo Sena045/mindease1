@@ -30,6 +30,12 @@ export const playChatSound = (type: 'send' | 'receive') => {
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
+    
+    // Cleanup on end
+    osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+    };
 
     if (type === 'send') {
       // "Pop" / "Whoosh" sound: High pitch, short decay
@@ -53,6 +59,11 @@ export const playChatSound = (type: 'send' | 'receive') => {
       
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
+      
+      osc2.onended = () => {
+          osc2.disconnect();
+          gain2.disconnect();
+      };
 
       // Main tone
       osc.type = 'sine';

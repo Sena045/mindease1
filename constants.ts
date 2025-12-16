@@ -45,7 +45,7 @@ export const CHAT_LOCALE_DATA: Record<LanguageCode, { greeting: string; quickRep
 // Base rates relative to 1 USD (Approximate for MVP)
 export const CURRENCY_RATES: Record<CurrencyCode, number> = {
   USD: 1,
-  INR: 84,
+  INR: 84.5,
   GBP: 0.78,
   EUR: 0.92,
   CAD: 1.35,
@@ -61,47 +61,45 @@ export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   AUD: 'A$'
 };
 
-// Pricing Tiers specifically tuned for purchasing power parity (PPP)
-// Based on approx base of ₹500 INR (~$6 USD)
+// Pricing Tiers tuned for Purchasing Power Parity (PPP)
+// Western markets are set to standard psychological price points ($9.99 etc)
+// India is set to affordable local pricing (₹500)
 export const REGIONAL_PRICING: Record<RegionCode, { monthly: string; yearly: string; currencySymbol: string }> = {
-  IN: { monthly: '500', yearly: '2,499', currencySymbol: '₹' },
-  US: { monthly: '5.99', yearly: '29.99', currencySymbol: '$' },
-  UK: { monthly: '4.99', yearly: '24.99', currencySymbol: '£' },
-  CA: { monthly: '7.99', yearly: '39.99', currencySymbol: 'C$' },
-  AU: { monthly: '8.99', yearly: '44.99', currencySymbol: 'A$' },
-  GLOBAL: { monthly: '5.99', yearly: '29.99', currencySymbol: '$' }
+  IN: { monthly: '500', yearly: '4,500', currencySymbol: '₹' },        // Anchor
+  US: { monthly: '9.99', yearly: '69.99', currencySymbol: '$' },       // Standard App Pricing
+  UK: { monthly: '8.99', yearly: '59.99', currencySymbol: '£' },       // UK Market Standard
+  CA: { monthly: '12.99', yearly: '89.99', currencySymbol: 'C$' },     // Adjusted for CAD value
+  AU: { monthly: '14.99', yearly: '99.99', currencySymbol: 'A$' },     // Adjusted for AUD value
+  GLOBAL: { monthly: '9.99', yearly: '69.99', currencySymbol: '$' }    // RoW defaults to US Standard
 };
 
-// --- HELPLINES PER REGION ---
-
-export const HELPLINES_BY_REGION: Record<RegionCode, { name: string; number: string; hours: string }[]> = {
+export const HELPLINES_BY_REGION: Record<string, { name: string; number: string; hours: string }[]> = {
   GLOBAL: [
-    { name: "Befrienders Worldwide", number: "visit befrienders.org", hours: "24x7" },
-    { name: "Emergency Services", number: "112 / 911", hours: "24x7" }
+    { name: 'Befrienders Worldwide', number: 'Visit befrienders.org', hours: 'Varies' },
+    { name: 'International Emergency', number: '112', hours: '24/7' },
   ],
   US: [
-    { name: "988 Suicide & Crisis Lifeline", number: "988", hours: "24x7" },
-    { name: "Crisis Text Line", number: "Text HOME to 741741", hours: "24x7" },
-    { name: "Veterans Crisis Line", number: "988 (Press 1)", hours: "24x7" }
+    { name: 'National Suicide Prevention Lifeline', number: '988', hours: '24/7' },
+    { name: 'Crisis Text Line', number: 'Text HOME to 741741', hours: '24/7' },
+    { name: 'Veterans Crisis Line', number: '988 (Press 1)', hours: '24/7' },
   ],
   IN: [
-    { name: "iCall (TISS)", number: "9152987821", hours: "Mon-Sat, 8 AM - 10 PM" },
-    { name: "Vandrevala Foundation", number: "18602662345", hours: "24x7" },
-    { name: "Kiran (Govt)", number: "18005990019", hours: "24x7" }
+    { name: 'Kiran Mental Health Rehabilitation', number: '1800-599-0019', hours: '24/7' },
+    { name: 'Vandrevala Foundation', number: '9999 666 555', hours: '24/7' },
+    { name: 'iCall', number: '9152987821', hours: 'Mon-Sat, 10 AM - 8 PM' },
   ],
   UK: [
-    { name: "Samaritans", number: "116 123", hours: "24x7" },
-    { name: "NHS Urgent Care", number: "111", hours: "24x7" },
-    { name: "Shout Crisis Text", number: "Text SHOUT to 85258", hours: "24x7" }
+    { name: 'Samaritans', number: '116 123', hours: '24/7' },
+    { name: 'SHOUT', number: 'Text SHOUT to 85258', hours: '24/7' },
   ],
   CA: [
-    { name: "Talk Suicide Canada", number: "1-833-456-4566", hours: "24x7" },
-    { name: "Wellness Together", number: "1-866-585-0445", hours: "24x7" }
+    { name: 'Talk Suicide Canada', number: '1-833-456-4566', hours: '24/7' },
+    { name: 'Wellness Together Canada', number: '1-866-585-0445', hours: '24/7' },
   ],
   AU: [
-    { name: "Lifeline", number: "13 11 14", hours: "24x7" },
-    { name: "Beyond Blue", number: "1300 22 4636", hours: "24x7" }
-  ]
+    { name: 'Lifeline', number: '13 11 14', hours: '24/7' },
+    { name: 'Beyond Blue', number: '1300 22 4636', hours: '24/7' },
+  ],
 };
 
 // --- AI CONFIGURATION ---
@@ -257,40 +255,49 @@ export const JOURNAL_PROMPTS = [
   "Describe your ideal relaxing day."
 ];
 
-// Base Fee is in USD for calculation purposes. 
-// MOCK DATA
 export const MOCK_THERAPISTS = [
   {
     id: '1',
-    name: "Dr. Elena Rossi",
-    title: "Clinical Psychologist",
-    imageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-    baseFeeUSD: 60, // Base price in USD
-    experience: "8 years",
-    languages: ["English", "Italian", "Spanish"],
-    specialization: ["Anxiety", "Depression", "CBT"],
-    nextAvailable: "Tomorrow, 4 PM"
+    name: 'Dr. Sarah Jenkins',
+    title: 'Clinical Psychologist',
+    imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    baseFeeUSD: 120,
+    experience: '10 years',
+    languages: ['English', 'Spanish'],
+    specialization: ['Anxiety', 'Depression', 'CBT'],
+    nextAvailable: 'Tomorrow, 10:00 AM'
   },
   {
     id: '2',
-    name: "Mr. David Chen",
-    title: "Licensed Therapist",
-    imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-    baseFeeUSD: 45,
-    experience: "5 years",
-    languages: ["English", "Mandarin"],
-    specialization: ["Stress Management", "Work-Life Balance"],
-    nextAvailable: "Today, 6 PM"
+    name: 'Rajesh Kumar',
+    title: 'Licensed Counselor',
+    imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh',
+    baseFeeUSD: 80,
+    experience: '8 years',
+    languages: ['English', 'Hindi'],
+    specialization: ['Stress Management', 'Work-Life Balance'],
+    nextAvailable: 'Today, 4:00 PM'
   },
   {
     id: '3',
-    name: "Ms. Sarah Johnson",
-    title: "Counseling Psychologist",
-    imageUrl: "https://randomuser.me/api/portraits/women/68.jpg",
-    baseFeeUSD: 40,
-    experience: "4 years",
-    languages: ["English", "French"],
-    specialization: ["Relationship Issues", "Self-Esteem"],
-    nextAvailable: "Wed, 11 AM"
+    name: 'Dr. Emily Chen',
+    title: 'Psychiatrist',
+    imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
+    baseFeeUSD: 150,
+    experience: '15 years',
+    languages: ['English', 'Mandarin'],
+    specialization: ['Trauma', 'PTSD', 'Medication Management'],
+    nextAvailable: 'Wed, 2:00 PM'
+  },
+  {
+    id: '4',
+    name: 'Michael Ross',
+    title: 'Behavioral Therapist',
+    imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
+    baseFeeUSD: 90,
+    experience: '5 years',
+    languages: ['English', 'French'],
+    specialization: ['Addiction', 'Youth Counseling'],
+    nextAvailable: 'Thu, 11:00 AM'
   }
 ];

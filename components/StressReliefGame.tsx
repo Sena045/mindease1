@@ -4,14 +4,38 @@ type GameMode = 'menu' | 'bubble' | 'balloons' | 'memory';
 
 const StressReliefGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [mode, setMode] = useState<GameMode>('menu');
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // --- AUDIO ENGINE (Synthetic, no assets needed) ---
+  // Initialize Audio Context once
+  useEffect(() => {
+    return () => {
+      // Cleanup on unmount
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(console.error);
+      }
+    };
+  }, []);
+
+  // --- AUDIO ENGINE (Optimized) ---
+  const getAudioContext = () => {
+    if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtxRef.current = new AudioContextClass();
+        }
+    }
+    // Resume if suspended (browser autoplay policy)
+    if (audioCtxRef.current?.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  };
+
   const playSound = (type: 'pop' | 'balloon' | 'flip' | 'match') => {
     try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
       
-      const ctx = new AudioContext();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       
@@ -20,9 +44,15 @@ const StressReliefGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       const now = ctx.currentTime;
       
-      // Pitch Randomization
+      // Pitch Randomization to reduce ear fatigue
       const detune = (Math.random() - 0.5) * 200;
       osc.detune.value = detune;
+      
+      // Explicit cleanup to avoid memory leaks on rapid fire
+      osc.onended = () => {
+          osc.disconnect();
+          gain.disconnect();
+      };
 
       if (type === 'pop') {
         osc.type = 'sine';
@@ -126,7 +156,7 @@ const StressReliefGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     useEffect(() => {
         const interval = setInterval(() => {
             if (Math.random() > 0.4) return;
-            const id = Date.now();
+            const id = Date.now() + Math.random(); // Ensure unique ID even on rapid ticks
             const x = Math.random() * 80 + 10; 
             const speed = Math.random() * 0.4 + 0.2;
             const color = COLORS[Math.floor(Math.random() * COLORS.length)];

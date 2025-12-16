@@ -1,3 +1,4 @@
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';
@@ -30,6 +31,7 @@ export enum AppView {
   TOOLS = 'TOOLS',
   PREMIUM = 'PREMIUM',
   SETTINGS = 'SETTINGS',
+  LEGAL = 'LEGAL', // New view for Privacy/Terms
 }
 
 export type RegionCode = 'GLOBAL' | 'IN' | 'US' | 'UK' | 'CA' | 'AU';
@@ -41,4 +43,11 @@ export interface UserSettings {
   currency: CurrencyCode;
   language: LanguageCode;
   soundEnabled: boolean;
+}
+
+// Add Razorpay to window
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }

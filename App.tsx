@@ -1,145 +1,219 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import MoodTracker from './components/MoodTracker';
 import WellnessTools from './components/WellnessTools';
 import SubscriptionView from './components/SubscriptionView';
 import Navigation from './components/Navigation';
-import TherapistDirectory from './components/TherapistDirectory';
 import SettingsModal from './components/SettingsModal';
+import LegalView from './components/LegalView';
 import Logo from './components/Logo';
 import { AppView, UserSettings } from './types';
 
 const App: React.FC = () => {
+  // --- STATE ---
   const [currentView, setCurrentView] = useState<AppView>(AppView.CHAT);
-  const [isPremium, setIsPremium] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  // Default Settings: GLOBAL, Sound Enabled
-  const [settings, setSettings] = useState<UserSettings>({
-    region: 'GLOBAL',
-    currency: 'USD',
-    language: 'en',
-    soundEnabled: true
+  // Safe initialization of Premium state
+  const [isPremium, setIsPremium] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem('is_premium_user') === 'true';
+      }
+    } catch (e) {
+      console.warn("LocalStorage access failed (isPremium)", e);
+    }
+    return false;
   });
 
-  const handleSettingsUpdate = (newSettings: UserSettings) => {
-    setSettings(newSettings);
-    // In a real app, save to localStorage here
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [legalType, setLegalType] = useState<'privacy' | 'terms'>('privacy');
+  
+  // Safe initialization of Offline state
+  const [isOffline, setIsOffline] = useState(() => {
+    try {
+      return typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    } catch {
+      return false;
+    }
+  });
+  
+  // Safe initialization of Settings with persistence
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = localStorage.getItem('user_settings');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn("Failed to load settings", e);
+    }
+    // Default fallback
+    return {
+      region: 'GLOBAL',
+      currency: 'USD',
+      language: 'en',
+      soundEnabled: true
+    };
+  });
+
+  // --- SAFE EFFECTS ---
+  useEffect(() => {
+    try {
+      const handleOnline = () => setIsOffline(false);
+      const handleOffline = () => setIsOffline(true);
+      
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    } catch (e) {
+      console.warn("Event listener attachment failed", e);
+    }
+  }, []);
+
+  // Save settings when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('user_settings', JSON.stringify(settings));
+    } catch (e) {
+      console.warn("Failed to persist settings", e);
+    }
+  }, [settings]);
+
+  // --- HANDLERS ---
+  const handleUnlock = () => {
+    setIsPremium(true);
+    try {
+      localStorage.setItem('is_premium_user', 'true');
+    } catch (e) {
+      console.warn("Failed to persist premium status", e);
+    }
   };
 
+  const handleNavigate = (view: AppView) => {
+    setCurrentView(view);
+  };
+
+  // --- SAFE RENDERER ---
   const renderContent = () => {
-    switch (currentView) {
-      case AppView.CHAT:
-        return (
-          <ChatInterface 
-            isPremium={isPremium}
-            onUnlock={() => setCurrentView(AppView.PREMIUM)}
-            onNavigate={(view) => setCurrentView(view)}
-            settings={settings}
-          />
-        );
-      case AppView.MOOD:
-        return (
-          <MoodTracker 
-            isPremium={isPremium}
-            onUnlock={() => setCurrentView(AppView.PREMIUM)}
-          />
-        );
-      case AppView.TOOLS:
-        return (
-          <WellnessTools 
-            isPremium={isPremium} 
-            onUnlock={() => setCurrentView(AppView.PREMIUM)} 
-          />
-        );
-      case AppView.PREMIUM:
-        return (
-          <SubscriptionView 
-            isPremium={isPremium} 
-            onSubscribe={() => setIsPremium(true)}
-            currency={settings.currency} 
-            region={settings.region}
-          />
-        );
-      case AppView.SETTINGS:
-        // We open the modal instead of a full view for settings
-        setIsSettingsOpen(true);
-        setCurrentView(AppView.CHAT); // Go back to chat
-        return null;
-      default:
-        return (
-          <ChatInterface 
-            isPremium={isPremium}
-            onUnlock={() => setCurrentView(AppView.PREMIUM)}
-            onNavigate={(view) => setCurrentView(view)}
-            settings={settings}
-          />
-        );
+    try {
+      switch (currentView) {
+        case AppView.CHAT:
+          return (
+            <ChatInterface 
+              isPremium={isPremium} 
+              onUnlock={() => handleNavigate(AppView.PREMIUM)}
+              onNavigate={handleNavigate}
+              settings={settings}
+              isOffline={isOffline}
+            />
+          );
+        case AppView.MOOD:
+          return <MoodTracker isPremium={isPremium} onUnlock={() => handleNavigate(AppView.PREMIUM)} />;
+        case AppView.TOOLS:
+          return <WellnessTools isPremium={isPremium} onUnlock={() => handleNavigate(AppView.PREMIUM)} />;
+        case AppView.PREMIUM:
+          return (
+            <SubscriptionView 
+              isPremium={isPremium} 
+              onSubscribe={handleUnlock}
+              currency={settings.currency} 
+              region={settings.region}
+              onOpenLegal={(type) => {
+                setLegalType(type);
+                handleNavigate(AppView.LEGAL);
+              }}
+            />
+          );
+        case AppView.SETTINGS:
+          // Settings is modal, but if navigated to as view, show modal
+          setTimeout(() => setIsSettingsOpen(true), 0);
+          return <ChatInterface 
+              isPremium={isPremium} 
+              onUnlock={() => handleNavigate(AppView.PREMIUM)}
+              onNavigate={handleNavigate}
+              settings={settings}
+              isOffline={isOffline}
+            />;
+        case AppView.LEGAL:
+            return <LegalView type={legalType} onClose={() => handleNavigate(AppView.PREMIUM)} />;
+        default:
+          return (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Section not found.
+            </div>
+          );
+      }
+    } catch (e) {
+      console.error("View rendering error:", e);
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+          <p className="text-red-500 mb-2">Something went wrong in this section.</p>
+          <button 
+            onClick={() => setCurrentView(AppView.CHAT)}
+            className="text-brand-600 font-bold underline"
+          >
+            Return Home
+          </button>
+        </div>
+      );
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-calm-bg font-sans overflow-hidden">
-      
-      {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdateSettings={handleSettingsUpdate}
-      />
+    <div className="flex flex-col h-[100dvh] bg-calm-bg font-sans overflow-hidden text-gray-900">
+       <SettingsModal 
+         isOpen={isSettingsOpen} 
+         onClose={() => setIsSettingsOpen(false)} 
+         settings={settings}
+         onUpdateSettings={setSettings}
+       />
+       
+       <div className="flex flex-1 overflow-hidden h-full">
+         {/* Desktop Nav */}
+         <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 z-20 h-full">
+            <Navigation 
+               currentView={currentView} 
+               setView={(v) => {
+                  if (v === AppView.SETTINGS) setIsSettingsOpen(true);
+                  else handleNavigate(v);
+               }} 
+               isPremium={isPremium} 
+            />
+         </aside>
 
-      {/* Main Layout Container */}
-      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
-        
-        {/* Desktop Sidebar (Hidden on Mobile) */}
-        <div className="hidden md:block h-full shadow-xl z-20 relative">
-           <Navigation 
-            currentView={currentView} 
-            setView={(view) => {
-               if(view === AppView.SETTINGS) setIsSettingsOpen(true);
-               else setCurrentView(view);
-            }} 
-            isPremium={isPremium}
-          />
-          {/* Settings Button Desktop */}
-          <div className="absolute bottom-4 left-0 w-full px-4">
-             <button onClick={() => setIsSettingsOpen(true)} className="flex items-center text-gray-600 hover:text-brand-800 w-full p-2 font-medium">
-                <i className="fa-solid fa-globe mr-2"></i> Settings
-             </button>
-          </div>
-        </div>
+         <main className="flex-1 flex flex-col relative w-full h-full bg-calm-bg">
+            {/* Mobile Header */}
+            <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 h-14 shrink-0 shadow-sm">
+               <div className="flex items-center gap-2 font-bold text-brand-900">
+                  <Logo className="w-6 h-6 text-brand-700" />
+                  <span>ReliefAnchor</span>
+               </div>
+               <button onClick={() => setIsSettingsOpen(true)} className="text-gray-500 w-8 h-8 flex items-center justify-center">
+                  <i className="fa-solid fa-gear"></i>
+               </button>
+            </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto relative w-full flex flex-col">
-          {/* Mobile Header */}
-          <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-             <h1 className="text-xl font-bold text-brand-900 flex items-center gap-2">
-              <Logo className="w-8 h-8 text-brand-700" />
-              ReliefAnchor
-            </h1>
-            <button onClick={() => setIsSettingsOpen(true)} className="text-gray-600 hover:text-brand-800">
-                <i className="fa-solid fa-globe text-lg"></i>
-            </button>
-          </div>
+            <div className="flex-1 overflow-hidden relative w-full">
+              {renderContent()}
+            </div>
 
-          <div className="flex-1 w-full">
-            {renderContent()}
-          </div>
-        </main>
-
-        {/* Mobile Bottom Navigation (Visible only on Mobile) */}
-        <div className="md:hidden z-30">
-          <Navigation 
-            currentView={currentView} 
-            setView={(view) => {
-               if(view === AppView.SETTINGS) setIsSettingsOpen(true);
-               else setCurrentView(view);
-            }} 
-            isPremium={isPremium}
-          />
-        </div>
-      </div>
+            {/* Mobile Nav */}
+            <nav className="md:hidden bg-white border-t border-gray-200 z-30 shrink-0 pb-safe">
+               <Navigation 
+                  currentView={currentView} 
+                  setView={(v) => {
+                      if (v === AppView.SETTINGS) setIsSettingsOpen(true);
+                      else handleNavigate(v);
+                  }} 
+                  isPremium={isPremium} 
+               />
+            </nav>
+         </main>
+       </div>
     </div>
   );
 };

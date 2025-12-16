@@ -11,11 +11,14 @@ const Logo: React.FC<LogoProps> = ({ className = "w-8 h-8", fill = "currentColor
       xmlns="http://www.w3.org/2000/svg" 
       viewBox="0 0 24 24" 
       fill="none" 
+      width="32"
+      height="32"
       stroke={fill} 
       strokeWidth="2" 
       strokeLinecap="round" 
       strokeLinejoin="round" 
       className={className}
+      style={{ minWidth: '24px', minHeight: '24px', maxWidth: '100%', maxHeight: '100%' }}
     >
       {/* Anchor Base */}
       <path d="M12 21a9 9 0 0 0 9-9h-2a7 7 0 0 1-14 0H3a9 9 0 0 0 9 9z" fill={fill} stroke="none" />

@@ -21,9 +21,19 @@ const JournalTool: React.FC<JournalToolProps> = ({ onClose, isPremium, onUnlock 
     if (saved) setEntry(saved);
   }, []);
 
+  // Debounced Save to LocalStorage to prevent main thread lag on rapid typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      localStorage.setItem('journal_draft', entry);
+    }, 500); // Wait 500ms after last keystroke
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [entry]);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEntry(e.target.value);
-    localStorage.setItem('journal_draft', e.target.value);
   };
 
   const handleClear = () => {

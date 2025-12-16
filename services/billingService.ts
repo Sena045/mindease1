@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core';
 
 export interface Product {
   productId: string;
@@ -7,186 +6,109 @@ export interface Product {
   currency: string;
   description: string;
   subscriptionPeriod: string;
-}
-
-// --- TYPE DEFINITIONS FOR CORDOVA-PLUGIN-PURCHASE ---
-declare global {
-  interface Window {
-    CdvPurchase?: {
-      store: {
-        register: (config: any[]) => void;
-        initialize: (options?: any) => void;
-        get: (id: string) => any;
-        requestPayment: (product: any) => any;
-        restore: () => any; // Added restore method
-        when: () => { 
-          approved: (cb: (t: any) => void) => void;
-          updated: (cb: (p: any) => void) => void;
-        };
-        off: (callback: any) => void;
-        update: () => void;
-        refresh: () => void;
-        ready: (cb: () => void) => void;
-        verbosity: any;
-      };
-      ProductType: {
-        PAID_SUBSCRIPTION: string;
-      };
-      Platform: {
-        GOOGLE_PLAY: string;
-      };
-      LogLevel: {
-        INFO: any;
-        DEBUG: any;
-      }
-    };
-  }
+  amountInPaisa: number;
 }
 
 // --- CONFIGURATION ---
-// CRITICAL: Set to FALSE for the .aab file you upload to Google Play.
-// If TRUE, Google will reject the app for bypassing real payments.
-// CHANGED: Enabled Mock Billing because Google Play profile is under verification.
-export const USE_MOCK_BILLING = true;
+// TODO: Replace with your actual Razorpay Key ID from the Razorpay Dashboard (Settings > API Keys)
+// Use 'rzp_test_...' for testing, and 'rzp_live_...' when you go live.
+const RAZORPAY_KEY_ID = 'rzp_test_YOUR_KEY_HERE'; 
 
-// --- MOCK DATA (Fallback) ---
-const MOCK_PRODUCTS: Product[] = [
+const PRODUCTS: Product[] = [
   {
-    productId: 'mindease_premium_monthly',
-    title: 'Monthly Premium (Test)',
+    productId: 'relief_anchor_monthly',
+    title: 'Monthly Premium',
     price: '₹500',
     currency: 'INR',
     description: 'Unlimited access for one month',
-    subscriptionPeriod: 'P1M'
+    subscriptionPeriod: 'Monthly',
+    amountInPaisa: 50000 // 500 INR
   },
   {
-    productId: 'mindease_premium_yearly',
-    title: 'Yearly Premium (Test)',
-    price: '₹2,499',
+    productId: 'relief_anchor_yearly',
+    title: 'Yearly Premium',
+    price: '₹4,500',
     currency: 'INR',
     description: 'Unlimited access for one year',
-    subscriptionPeriod: 'P1Y'
+    subscriptionPeriod: 'Yearly',
+    amountInPaisa: 450000 // 4500 INR
   }
 ];
 
-// CRITICAL: These IDs must match Google Play Console EXACTLY
-const PRODUCT_IDS = ['mindease_premium_monthly', 'mindease_premium_yearly'];
-let isStoreInitialized = false;
-
-// --- INITIALIZE STORE ---
-const initStore = () => {
-  if (USE_MOCK_BILLING || isStoreInitialized || !window.CdvPurchase) return;
-
-  const { store, ProductType, Platform } = window.CdvPurchase;
-  
-  // Set Verbosity to Info (Debug is too noisy for prod)
-  store.verbosity = window.CdvPurchase.LogLevel.INFO;
-
-  // Register products
-  store.register(PRODUCT_IDS.map(id => ({
-    id,
-    type: ProductType.PAID_SUBSCRIPTION,
-    platform: Platform.GOOGLE_PLAY,
-  })));
-
-  // Setup listeners
-  store.when().approved((transaction: any) => {
-    console.log('[Billing] ✅ Transaction approved:', transaction);
-    transaction.verify(); 
-  });
-  
-  store.initialize([Platform.GOOGLE_PLAY]);
-  isStoreInitialized = true;
-};
-
-// --- GET PRODUCTS ---
 export const getProducts = async (): Promise<Product[]> => {
-  // 1. Force Mock Mode (If enabled or on Web)
-  if (USE_MOCK_BILLING || !Capacitor.isNativePlatform() || !window.CdvPurchase) {
-    if (USE_MOCK_BILLING) console.warn('[Billing] Mock Mode Active - Testing features enabled');
-    return new Promise((resolve) => setTimeout(() => resolve(MOCK_PRODUCTS), 600));
-  }
-
-  // 2. Real Google Play Billing
-  try {
-    initStore();
-    const { store } = window.CdvPurchase;
-
-    console.log('[Billing] Updating store...');
-    store.update();
-
-    // Wait for store to sync (timeout after 2.5s)
-    await new Promise(resolve => setTimeout(resolve, 2500));
-
-    const products = PRODUCT_IDS.map(id => store.get(id)).filter(p => p && p.loaded && p.valid);
-    
-    if (products.length > 0) {
-      return products.map((p: any) => ({
-        productId: p.id,
-        title: p.title || 'Premium Plan',
-        price: p.offers?.[0]?.pricingPhases?.[0]?.price || '₹--',
-        currency: p.offers?.[0]?.pricingPhases?.[0]?.currency || 'INR',
-        description: p.description || '',
-        subscriptionPeriod: 'Subscription'
-      }));
-    }
-    
-    return []; // Return empty if no products found (App should handle empty state gracefully)
-    
-  } catch (error) {
-    console.error('[Billing] Failed to load products.', error);
-    return [];
-  }
+  return PRODUCTS;
 };
 
-// --- REQUEST PURCHASE ---
 export const requestPurchase = async (productId: string): Promise<boolean> => {
-  // 1. Force Mock Mode
-  if (USE_MOCK_BILLING || !Capacitor.isNativePlatform() || !window.CdvPurchase) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.Razorpay) {
+      alert("Razorpay SDK not loaded. Please check your internet connection.");
+      resolve(false);
+      return;
+    }
+
+    const product = PRODUCTS.find(p => p.productId === productId);
+    if (!product) {
+      alert("Product not found.");
+      resolve(false);
+      return;
+    }
+
+    const options = {
+      key: RAZORPAY_KEY_ID, 
+      amount: product.amountInPaisa, 
+      currency: "INR", 
+      name: "ReliefAnchor",
+      description: product.title,
+      // Placeholder logo - replace with your actual URL hosted on your Netlify/Vercel public folder
+      image: "https://via.placeholder.com/150/0f766e/ffffff?text=Anchor", 
+      handler: function (response: any) {
+        // Success Callback
+        console.log("Payment Successful", response);
+        // In a production app, you MUST verify the payment signature on your backend here.
+        // For this MVP, we trust the client-side success callback.
         resolve(true);
-      }, 1500);
-    });
-  }
+      },
+      prefill: {
+        name: "ReliefAnchor User", 
+        email: "user@example.com",
+        contact: "" // Leave empty to let user fill
+      },
+      theme: {
+        color: "#0f766e" // Match app brand color
+      },
+      modal: {
+        ondismiss: function() {
+          console.log("Payment Cancelled");
+          resolve(false);
+        }
+      }
+    };
 
-  // 2. Real Google Play Billing
-  try {
-    const { store } = window.CdvPurchase;
-    const product = store.get(productId);
-    
-    if (!product || !product.valid) {
-      alert("Product not found or invalid. Please check your internet connection.");
-      return false;
+    try {
+      const rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response: any){
+        console.error("Payment Failed", response.error);
+        alert(`Payment Failed: ${response.error.description}`);
+        resolve(false);
+      });
+      rzp1.open();
+    } catch (err) {
+      console.error("Razorpay initialization failed", err);
+      // Fallback for developer testing if Key ID is not set
+      if (RAZORPAY_KEY_ID.includes('YOUR_KEY')) {
+         const confirm = window.confirm("[DEVELOPER MODE] Razorpay Key ID not set. Simulate successful payment?");
+         resolve(confirm);
+      } else {
+         resolve(false);
+      }
     }
-
-    const offer = product.getOffer();
-
-    if (offer) {
-      store.requestPayment(offer);
-      return true; 
-    } else {
-      return false;
-    }
-  } catch (error) {
-    console.error('[Billing] Purchase error.', error);
-    return false;
-  }
+  });
 };
 
-// --- RESTORE PURCHASES (REQUIRED BY GOOGLE) ---
 export const restorePurchases = async (): Promise<boolean> => {
-  if (USE_MOCK_BILLING || !Capacitor.isNativePlatform() || !window.CdvPurchase) {
-     return new Promise(resolve => setTimeout(() => resolve(true), 1000));
-  }
-
-  try {
-    const { store } = window.CdvPurchase;
-    await store.restore();
-    store.refresh();
-    return true;
-  } catch (e) {
-    console.error("Restore failed", e);
-    return false;
-  }
+  // Since we don't have a backend database for this MVP, we check LocalStorage.
+  // In a real app, you would call your API to check the user's subscription status.
+  const hasLocal = localStorage.getItem('is_premium_user') === 'true';
+  return hasLocal;
 };

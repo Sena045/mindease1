@@ -42,6 +42,14 @@ const SelfHelpLibrary: React.FC<SelfHelpLibraryProps> = ({ isPremium, onUnlock, 
 
   // Handle Audio Synthesis (Sound Generation)
   useEffect(() => {
+    // Cleanup function that runs before effect or on unmount
+    const cleanup = () => {
+        if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(console.error);
+            audioCtxRef.current = null;
+        }
+    };
+
     if (isPlaying) {
       try {
         const Ctx = window.AudioContext || (window as any).webkitAudioContext;
@@ -77,20 +85,10 @@ const SelfHelpLibrary: React.FC<SelfHelpLibraryProps> = ({ isPremium, onUnlock, 
         console.error("Audio playback error:", e);
       }
     } else {
-      // Stop Audio
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-        audioCtxRef.current = null;
-      }
+        cleanup();
     }
 
-    // Cleanup on unmount
-    return () => {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-        audioCtxRef.current = null;
-      }
-    };
+    return cleanup;
   }, [isPlaying]);
 
   // Simulated Audio Progress

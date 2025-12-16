@@ -4,150 +4,222 @@ const SOUNDS = [
   { id: 'rain', name: 'Gentle Rain', icon: 'fa-cloud-rain', color: 'bg-blue-100 text-blue-600' },
   { id: 'forest', name: 'Forest Birds', icon: 'fa-tree', color: 'bg-green-100 text-green-600' },
   { id: 'waves', name: 'Ocean Waves', icon: 'fa-water', color: 'bg-cyan-100 text-cyan-600' },
-  { id: 'white', name: 'White Noise', icon: 'fa-fan', color: 'bg-gray-100 text-gray-600' },
+  { id: 'white', name: 'Deep Focus (Fan)', icon: 'fa-fan', color: 'bg-gray-100 text-gray-600' },
 ];
 
 const SleepSoundsTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [playing, setPlaying] = useState<string | null>(null);
+  
+  // Persistent refs for the single audio context strategy
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const sourceNodesRef = useRef<AudioNode[]>([]); // Track nodes to stop them properly
   const birdTimeoutRef = useRef<any>(null);
 
-  // Stop audio on unmount
-  useEffect(() => {
-    return () => stopAudio();
-  }, []);
-
-  // Handle sound changes
-  useEffect(() => {
-    if (playing) {
-      playAudio(playing);
-    } else {
-      stopAudio();
+  // Initialize or get persistent audio context
+  const getAudioContext = () => {
+    if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtxRef.current = new AudioContextClass();
+        }
     }
-  }, [playing]);
+    // Resume if suspended (browser autoplay policy)
+    if (audioCtxRef.current?.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  };
 
-  const stopAudio = () => {
+  // Stop all currently playing nodes
+  const stopCurrentSound = () => {
+    // 1. Clear timeouts
     if (birdTimeoutRef.current) {
         clearTimeout(birdTimeoutRef.current);
         birdTimeoutRef.current = null;
     }
-    if (audioCtxRef.current) {
-      try {
-        // Ramp down volume before closing for smooth stop
-        if (gainNodeRef.current) {
-            gainNodeRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.1);
-        }
-        setTimeout(() => {
-            audioCtxRef.current?.close();
-            audioCtxRef.current = null;
-        }, 150);
-      } catch (e) {
-        console.error("Error closing audio context", e);
-      }
+
+    // 2. Fade out
+    if (gainNodeRef.current && audioCtxRef.current) {
+        try {
+            // Prevent clicking noise with rapid ramp down
+            gainNodeRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.05);
+        } catch(e) {}
     }
+
+    // 3. Disconnect and stop nodes after short delay for fade
+    // We snapshot the nodes to stop because the ref will be cleared for next sound
+    const nodesToStop = [...sourceNodesRef.current];
+    sourceNodesRef.current = [];
+
+    setTimeout(() => {
+        nodesToStop.forEach(node => {
+            try {
+                if (node instanceof AudioBufferSourceNode || node instanceof OscillatorNode) {
+                    node.stop();
+                }
+                node.disconnect();
+            } catch(e) {}
+        });
+    }, 200);
   };
 
-  const createNoiseBuffer = (ctx: AudioContext) => {
-    const bufferSize = ctx.sampleRate * 2; // 2 seconds buffer
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+        stopCurrentSound();
+        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+            audioCtxRef.current.close().catch(e => console.error(e));
+        }
+    };
+  }, []);
+
+  // Handle sound changes
+  useEffect(() => {
+    stopCurrentSound();
+
+    if (playing) {
+      // Small delay to allow fade out of previous track
+      const timer = setTimeout(() => {
+          playAudio(playing);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [playing]);
+
+  // --- NOISE GENERATORS ---
+  const createPinkNoiseBuffer = (ctx: AudioContext) => {
+    const bufferSize = ctx.sampleRate * 2;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
+    let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        data[i] *= 0.11; 
+        b6 = white * 0.115926;
+    }
+    return buffer;
+  };
+
+  const createBrownNoiseBuffer = (ctx: AudioContext) => {
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = data[i];
+        data[i] *= 3.5; 
     }
     return buffer;
   };
 
   const playAudio = (type: string) => {
-    stopAudio(); // Ensure clean slate
-    
     try {
-        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-        if (!Ctx) return;
-        const ctx = new Ctx();
-        audioCtxRef.current = ctx;
+        const ctx = getAudioContext();
+        if (!ctx) return;
     
         const masterGain = ctx.createGain();
         masterGain.connect(ctx.destination);
         gainNodeRef.current = masterGain;
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
-        masterGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 1); // Fade in
-    
-        const noiseBuffer = createNoiseBuffer(ctx);
+        masterGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 1); 
+        
+        // Track the gain node too so we can disconnect it
+        sourceNodesRef.current.push(masterGain);
     
         if (type === 'white') {
-          const noiseSrc = ctx.createBufferSource();
-          noiseSrc.buffer = noiseBuffer;
-          noiseSrc.loop = true;
-          noiseSrc.connect(masterGain);
-          noiseSrc.start();
-        } else if (type === 'rain') {
-          const noiseSrc = ctx.createBufferSource();
-          noiseSrc.buffer = noiseBuffer;
-          noiseSrc.loop = true;
+          const buffer = createBrownNoiseBuffer(ctx);
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
           
           const filter = ctx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.value = 800;
-          noiseSrc.connect(filter);
+          filter.type = 'highpass';
+          filter.frequency.value = 40;
+          
+          src.connect(filter);
           filter.connect(masterGain);
+          src.start();
           
-          noiseSrc.start();
+          sourceNodesRef.current.push(src, filter);
+          
+        } else if (type === 'rain') {
+          const buffer = createPinkNoiseBuffer(ctx);
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
+          
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 800; 
+          
+          src.connect(filter);
+          filter.connect(masterGain);
+          src.start();
+
+          sourceNodesRef.current.push(src, filter);
+
         } else if (type === 'waves') {
-          const noiseSrc = ctx.createBufferSource();
-          noiseSrc.buffer = noiseBuffer;
-          noiseSrc.loop = true;
+          const buffer = createBrownNoiseBuffer(ctx);
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
     
           const filter = ctx.createBiquadFilter();
           filter.type = 'lowpass';
-          filter.Q.value = 1;
+          filter.Q.value = 0; 
     
-          // LFO to modulate filter frequency for wave effect
           const lfo = ctx.createOscillator();
           lfo.type = 'sine';
-          lfo.frequency.value = 0.2; // 5 seconds cycle
+          lfo.frequency.value = 0.15; 
     
           const lfoGain = ctx.createGain();
-          lfoGain.gain.value = 600; // Modulate depth
+          lfoGain.gain.value = 400; 
     
           lfo.connect(lfoGain);
           lfoGain.connect(filter.frequency);
-          filter.frequency.setValueAtTime(800, ctx.currentTime);
+          
+          filter.frequency.setValueAtTime(350, ctx.currentTime); 
     
-          noiseSrc.connect(filter);
+          src.connect(filter);
           filter.connect(masterGain);
     
-          noiseSrc.start();
+          src.start();
           lfo.start();
-        } else if (type === 'forest') {
-          // Wind/Leaves background
-          const noiseSrc = ctx.createBufferSource();
-          noiseSrc.buffer = noiseBuffer;
-          noiseSrc.loop = true;
-    
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'highpass';
-          filter.frequency.value = 600;
-          const filter2 = ctx.createBiquadFilter();
-          filter2.type = 'lowpass';
-          filter2.frequency.value = 3000;
-    
-          noiseSrc.connect(filter);
-          filter.connect(filter2);
-          filter2.connect(masterGain);
           
-          // Lower volume for background wind
-          const bgGain = ctx.createGain();
-          bgGain.gain.value = 0.3;
-          filter2.disconnect();
-          filter2.connect(bgGain);
-          bgGain.connect(masterGain);
+          sourceNodesRef.current.push(src, filter, lfo, lfoGain);
+          
+        } else if (type === 'forest') {
+          const buffer = createPinkNoiseBuffer(ctx);
+          const windSrc = ctx.createBufferSource();
+          windSrc.buffer = buffer;
+          windSrc.loop = true;
     
-          noiseSrc.start();
+          const windFilter = ctx.createBiquadFilter();
+          windFilter.type = 'lowpass';
+          windFilter.frequency.value = 300; 
+          
+          const windGain = ctx.createGain();
+          windGain.gain.value = 0.3; 
+
+          windSrc.connect(windFilter);
+          windFilter.connect(windGain);
+          windGain.connect(masterGain);
+          windSrc.start();
+          
+          sourceNodesRef.current.push(windSrc, windFilter, windGain);
     
-          // Procedural Bird Chirps
           const chirp = () => {
-            if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+            if (!ctx || ctx.state === 'closed' || !gainNodeRef.current) return;
             
             const osc = ctx.createOscillator();
             const birdGain = ctx.createGain();
@@ -156,21 +228,24 @@ const SleepSoundsTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             birdGain.connect(masterGain);
             
             const now = ctx.currentTime;
-            // Random start freq between 1500-2500
-            const startFreq = 1500 + Math.random() * 1000;
+            const startFreq = 2000 + Math.random() * 1500;
             osc.frequency.setValueAtTime(startFreq, now);
-            // Chirp up or down
-            osc.frequency.exponentialRampToValueAtTime(startFreq + (Math.random() > 0.5 ? 500 : -300), now + 0.1);
+            osc.frequency.linearRampToValueAtTime(startFreq + (Math.random() > 0.5 ? 500 : -200), now + 0.1);
             
             birdGain.gain.setValueAtTime(0, now);
-            birdGain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-            birdGain.gain.linearRampToValueAtTime(0, now + 0.15);
+            birdGain.gain.linearRampToValueAtTime(0.05, now + 0.02);
+            birdGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
             
             osc.start(now);
             osc.stop(now + 0.2);
             
-            // Schedule next chirp
-            birdTimeoutRef.current = setTimeout(chirp, 1000 + Math.random() * 3000);
+            // Clean up these transient nodes manually after they play
+            osc.onended = () => {
+                osc.disconnect();
+                birdGain.disconnect();
+            };
+            
+            birdTimeoutRef.current = setTimeout(chirp, 800 + Math.random() * 4000);
           };
           chirp();
         }
@@ -243,7 +318,7 @@ const SleepSoundsTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       )}
 
       <div className="mt-auto pt-8 text-center text-xs text-gray-400">
-          <p>Sounds are generated in real-time for relaxation.</p>
+          <p>Sounds are synthesized in real-time for maximum relaxation.</p>
       </div>
     </div>
   );

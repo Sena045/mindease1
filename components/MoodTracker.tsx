@@ -30,15 +30,22 @@ const MoodTracker: React.FC<MoodTrackerProps> = ({ isPremium, onUnlock }) => {
 
   // Load from local storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('mood_entries');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setEntries(parsed);
-      
-      // Check if logged today (using local time logic)
-      const today = getLocalDateString();
-      const found = parsed.find((e: MoodEntry) => e.date.startsWith(today));
-      if (found) setHasLoggedToday(true);
+    try {
+      const saved = localStorage.getItem('mood_entries');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+            setEntries(parsed);
+            
+            // Check if logged today (using local time logic)
+            const today = getLocalDateString();
+            const found = parsed.find((e: MoodEntry) => e.date.startsWith(today));
+            if (found) setHasLoggedToday(true);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse mood entries", e);
+      // Optional: localStorage.removeItem('mood_entries'); if we want to reset on corruption
     }
   }, []);
 
