@@ -2,15 +2,18 @@ import { GoogleGenAI } from "@google/genai";
 import { GET_SYSTEM_INSTRUCTION } from "../constants";
 import { LanguageCode, RegionCode } from "../types";
 
-// Lazy initialization var
+// Lazy initialization variable
+// This ensures we don't try to access API_KEY or create the client until needed
 let aiClient: GoogleGenAI | null = null;
 
-// Helper to get or create the client safely
 const getAiClient = (): GoogleGenAI => {
   if (!aiClient) {
+    // Access env var lazily. 
+    // Vite config defines 'process.env.API_KEY' as a string replacement.
     const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("API Key is missing");
+    
+    if (!apiKey || apiKey === "undefined" || apiKey === "") {
+      throw new Error("API_KEY_MISSING");
     }
     aiClient = new GoogleGenAI({ apiKey });
   }
@@ -24,14 +27,8 @@ export const sendMessageToGemini = async (
 ): Promise<string> => {
   
   try {
-    // Attempt to initialize client inside the function call
-    // This prevents the app from crashing on white-screen load if key is missing
     const ai = getAiClient();
-    
-    // Use the 2.5 Flash model for low latency chat
     const model = 'gemini-2.5-flash';
-
-    // Generate dynamic instruction based on user settings
     const systemInstruction = GET_SYSTEM_INSTRUCTION(userSettings.language, userSettings.region);
 
     const chat = ai.chats.create({
@@ -45,16 +42,16 @@ export const sendMessageToGemini = async (
     });
 
     const response = await chat.sendMessage({ message });
+    return response.text || "I'm listening, but I'm having trouble finding the right words.";
     
-    return response.text || "I'm listening, but I'm having trouble finding the right words. Could you rephrase that?";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
     
-    if (error.message === "API Key is missing") {
-       console.warn("API Key is missing. Chat features will be disabled.");
-       return "I'm currently unable to connect to the cloud. Please check your API Key configuration.";
+    if (error.message === "API_KEY_MISSING") {
+       console.warn("API Key is missing. Chat features disabled.");
+       return "System: API Key is missing. Please configure VITE_API_KEY in your .env file.";
     }
 
-    return "I'm having a little trouble connecting right now. Please check your internet connection and try again.";
+    return "I'm having a little trouble connecting right now. Please check your internet connection.";
   }
 };

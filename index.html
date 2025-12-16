@@ -34,7 +34,7 @@
     <style>
       html, body, #root { height: 100%; margin: 0; padding: 0; overscroll-behavior: none; }
       body { background-color: #f0fdfa; font-family: 'Nunito', sans-serif; }
-      /* Fallback spinner */
+      /* CSS Fallback: Visible only if React fails to mount entirely */
       #root:empty::before {
         content: "Loading ReliefAnchor...";
         display: block;
@@ -51,7 +51,6 @@
 
   <body class="antialiased">
     <div id="root"></div>
-    <!-- Pointing to the correct local entry point -->
     <script type="module" src="./main.tsx"></script>
   </body>
 </html>
