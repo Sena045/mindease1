@@ -2,17 +2,17 @@ import { GoogleGenAI } from "@google/genai";
 import { GET_SYSTEM_INSTRUCTION } from "../constants";
 import { LanguageCode, RegionCode } from "../types";
 
-// Singleton instance, lazy initialized
+// Singleton instance
 let aiClient: GoogleGenAI | null = null;
 
 // Helper to safely get env var
 const getApiKey = (): string | undefined => {
-  // Check standard process.env (injected by Vite define)
-  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+  // Vite replaces process.env.API_KEY with the define string
+  if (typeof process !== 'undefined' && process.env.API_KEY) {
     return process.env.API_KEY;
   }
-  // Check Vite import.meta
-  if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+  // Fallback for some vite env setups
+  if (import.meta.env?.VITE_API_KEY) {
     return import.meta.env.VITE_API_KEY;
   }
   return undefined;
@@ -22,7 +22,7 @@ const getClient = (): GoogleGenAI => {
   if (!aiClient) {
     const key = getApiKey();
     if (!key) {
-      console.warn("Gemini Service: No API Key found.");
+      console.warn("Gemini Service: Missing API Key. Check VITE_API_KEY or Netlify Environment Variables.");
       throw new Error("MISSING_API_KEY");
     }
     aiClient = new GoogleGenAI({ apiKey: key });
@@ -37,7 +37,6 @@ export const sendMessageToGemini = async (
 ): Promise<string> => {
   
   try {
-    // Initialize ONLY when called
     const ai = getClient();
     const modelId = 'gemini-2.5-flash';
     const systemInstruction = GET_SYSTEM_INSTRUCTION(userSettings.language, userSettings.region);
@@ -59,9 +58,9 @@ export const sendMessageToGemini = async (
     console.error("Gemini API Error:", error);
     
     if (error.message === "MISSING_API_KEY") {
-       return "Setup Required: Please add VITE_API_KEY to your .env file or Netlify environment variables.";
+       return "Setup Error: API Key is missing. Please check your app settings.";
     }
 
-    return "I'm having trouble connecting right now. Please check your internet connection.";
+    return "I'm having trouble connecting to my service right now. Please try again in a moment.";
   }
 };
