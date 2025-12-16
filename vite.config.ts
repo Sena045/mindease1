@@ -5,13 +5,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react()],
-    base: '/', // CRITICAL: Ensures assets load correctly on Netlify
+    base: '/',
     define: {
       'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY || process.env.API_KEY || '')
     },
     build: {
       outDir: 'dist',
-      emptyOutDir: true,
+      assetsDir: 'assets',
       sourcemap: false
     },
     server: {
